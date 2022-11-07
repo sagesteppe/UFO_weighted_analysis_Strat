@@ -118,7 +118,7 @@ $$ W_{i} = 1/ \pi_{i} $$
 + $ W_{i} $ is the weight associated with each site
 
 
-```{r Adjust the Sample Point Weights across entire Field Office.}
+```{r Adjust the Sample Point Weights across entire Field Office}
 library(spsurvey)
 
 # what I think i need.
@@ -126,7 +126,6 @@ library(spsurvey)
 # wgt_cat = the stratum for each plot. 
 # framesize = desired number of samples in each plot.
 # wgt = the weight for each plot...
-
 
 pts <- pts %>% 
   filter(str_detect(Panel, 'OverSample', negate = T))
@@ -154,9 +153,10 @@ adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites)
 res <- 1/adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) # proportion of area
 # we can make inference to based on inference area? 
 names(res) <- aim_wgtcat
-res
 
-ab <- data.frame(
+rm(aim_wgt, aim_wgtcat, aim_framesize, aim_sites)
+
+newWghts <- data.frame(
   'Stratum' = names(res),
   'Weight' = res) %>% 
   group_by(Stratum) %>% 
@@ -165,20 +165,102 @@ ab <- data.frame(
   distinct(.keep_all = T) %>% 
   mutate(WghtPerPlot = Weight / PlotsSampled)
 
-newWgts <- left_join(ab, OriginalWeights %>% 
-  select(TotalAcres = Acres) ) %>% 
+newWghts1 <- data.frame(
+  'Stratum' = names(res),
+  'Weight' = res
+) %>% group_by(Stratum, Weight) %>%
+  filter(Weight == Inf) %>% 
+  add_count(name = 'PlotsRejected')  %>% 
+  distinct(.keep_all = T) %>% 
+  ungroup %>% 
+  select(-Weight)
+
+newWghts <- left_join(newWghts, newWghts1)
+
+newWghts <- left_join(newWghts, OriginalWeights %>% 
+  select(TotalAcres = Acres, Rejected) ) %>% 
   mutate(WgtAcres = WghtPerPlot * TotalAcres, 
          AreaInference = TotalAcres * Weight)  %>% 
   select(Stratum, TotalAcres, AreaInference, WgtAcres, 
-         PlotsSampled, PropInference = Weight, WghtPerPlot) 
+         PlotsSampled, PlotsRejected, PropInference = Weight, WghtPerPlot) 
 
+rm(res, newWghts1)
+```
+
+
+```{r Point weights for ACEC and WSA}
+
+spatial_products <- '/media/sagesteppe/ExternalHD/UFO_cartography'
+design_rast <- '/media/sagesteppe/ExternalHD/UFO_AIM_Design_Stratification'
+lookup <- read.csv(file.path('raw', list.files('raw', pattern = '.txt'))) %>% 
+  group_by(UFO_STRATA) %>% 
+  mutate(STRATA_ID = cur_group_id())
+
+uFO <- st_read(file.path(spatial_products, 'BLM_CO_Grazing_Allotments/gra_allot_poly.shp'), quiet = T)
+
+acecs <- st_read(file.path(spatial_products, 'BLM_CO_ACEC/acec_desig_poly.shp'), 
+                 quiet = T) %>%  
+  st_intersection(uFO, .) %>% 
+  select(NAME = ACEC_NAME) %>% 
+  mutate(TYPE = 'ACEC')
+wsa <- st_read(file.path(spatial_products, 'BLM_CO_WSA/nlcs_wsa_poly.shp'), 
+               quiet = T) %>% 
+  st_intersection(uFO, .) %>% 
+  select(NAME = NLCS_NAME) %>% 
+  mutate(TYPE = 'WSA')
+
+wsAcec <- bind_rows(acecs, wsa)
+
+# identify all points which fell in the focal areas
+wsAcec_pts <- pts[unlist(st_intersects(wsAcec, st_transform(pts, st_crs(wsAcec)))),]
+
+# identify the cover of each stratum in the focal area
+wsaSpat <- vect(wsAcec) 
+
+f <- terra::rast(file.path(design_rast, 'processed/UFO_Strata_reclass_30m.tif'))
+wsaSpat <- project(wsaSpat, crs(f))
+
+wsAcec_areas <- terra::expanse(wsaSpat, unit = 'ha')
+
+sum(wsAcec_areas) # area in hectares
+
+raster_cells <- extract(f, wsaSpat) %>% 
+  group_by(BPS_CODE) %>% 
+  count() %>% 
+  ungroup() %>% 
+  mutate(PropArea = n/sum(n))
+
+
+
+# rm(acecs, wsa, acec_pts, wsa_pts)
+```
+
+
+```{r Point weights for the National Monument writeups}
+
+monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly.shp'), 
+                 quiet = T) %>%  st_intersection(uFO, .) %>% 
+  group_by(NLCS_NAME) %>% 
+  st_collection_extract("POLYGON")  %>%  # there are these funny points
+  summarize(geometry = st_union(geometry)) 
+
+mnmt_pts <- pts[unlist(st_intersects(monuments, st_transform(pts, st_crs(monuments)))),]
+
+
+
+ggplot(monuments) +
+  geom_sf()
+
+rm()
 ```
 
 
 
-```{r Weights for ACEC}
 
-```
+
+
+
+
 
 
 

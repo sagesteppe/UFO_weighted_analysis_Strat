@@ -37,7 +37,6 @@ plot_status <- plot_status %>%
 
 inner_join(plot_status, status_check, by = 'Plot.ID') # take a look for yourself, all good. 
 
-
 # it turns out some oversamples from the original design were not populated over to the yearly tracking 
 # sheets. We can note there status as not_sampled here. 
 plot_status <- plot_status %>% 
@@ -107,7 +106,7 @@ $$ \pi_{i} = n/N $$
 * Where 
 + $ \pi_{i} $ is the inclusion probability of each individual, i.e. the probability of a site being selected
 + $ n $ sample size, e.g. the number of plots
-+ $ N $ population size, i.e. the target frame ? e.g. a BLM field office?
++ $ N $ population size, e.g. the target is geographic size of the BLM field office
 
 
 Under a weighted design, wherein each stratum has an associated weight e.g. based on it's heterogeneity
@@ -191,13 +190,12 @@ rm(res, newWghts1)
 ```{r Point weights for ACEC and WSA}
 
 spatial_products <- '/media/sagesteppe/ExternalHD/UFO_cartography'
-design_rast <- '/media/sagesteppe/ExternalHD/UFO_AIM_Design_Stratification'
-lookup <- read.csv(file.path('raw', list.files('raw', pattern = '.txt'))) %>% 
-  group_by(UFO_STRATA) %>% 
-  mutate(STRATA_ID = cur_group_id())
+design_rast <- '/media/sagesteppe/ExternalHD/UFO_AIM_Design_Stratification/processed'
+lookup_table <- read.csv(file.path(design_rast, 'UFO_strata_areas.csv')) %>% 
+  select(RasterValue, Code)
 
-uFO <- st_read(file.path(spatial_products, 'BLM_CO_Grazing_Allotments/gra_allot_poly.shp'), quiet = T)
-
+uFO <- st_read(file.path(spatial_products, 
+                         'BLM_CO_Grazing_Allotments/gra_allot_poly.shp'), quiet = T)
 acecs <- st_read(file.path(spatial_products, 'BLM_CO_ACEC/acec_desig_poly.shp'), 
                  quiet = T) %>%  
   st_intersection(uFO, .) %>% 
@@ -209,30 +207,39 @@ wsa <- st_read(file.path(spatial_products, 'BLM_CO_WSA/nlcs_wsa_poly.shp'),
   select(NAME = NLCS_NAME) %>% 
   mutate(TYPE = 'WSA')
 
-wsAcec <- bind_rows(acecs, wsa)
+wsAcec <- bind_rows(acecs, wsa) %>% 
+  mutate(ID = 1:n(), .before = 1)
 
 # identify all points which fell in the focal areas
 wsAcec_pts <- pts[unlist(st_intersects(wsAcec, st_transform(pts, st_crs(wsAcec)))),]
 
 # identify the cover of each stratum in the focal area
 wsaSpat <- vect(wsAcec) 
+wsAcec_areas <- terra::expanse(wsaSpat, unit = 'ha') * 2.47105
+wsAcec_areas <- bind_cols(wsAcec, Total_Area =  wsAcec_areas)
 
-f <- terra::rast(file.path(design_rast, 'processed/UFO_Strata_reclass_30m.tif'))
-wsaSpat <- project(wsaSpat, crs(f))
+strat_raster <- terra::rast(file.path(design_rast, 'UFO_Strata_reclass_30m.tif'))
+wsaSpat <- project(wsaSpat, crs(strat_raster))
 
-wsAcec_areas <- terra::expanse(wsaSpat, unit = 'ha')
-
-sum(wsAcec_areas) # area in hectares
-
-raster_cells <- extract(f, wsaSpat) %>% 
-  group_by(BPS_CODE) %>% 
+raster_cells <- extract(strat_raster, wsaSpat) %>% 
+  group_by(ID, BPS_CODE) %>% 
   count() %>% 
+  ungroup(BPS_CODE) %>% 
+  mutate(PropArea = n/sum(n))  %>% 
+  left_join(., lookup_table, by = c('BPS_CODE' = 'RasterValue'))
+
+options(scipen=999)
+wsAcec_areas <- left_join(wsAcec_areas, raster_cells) %>% 
+  mutate(Area = Total_Area * PropArea)  %>% 
+  select(ID, NAME, TYPE, Total_Area, Code, PropArea, Area)
+
+wsAcec_area_summary <- wsAcec_areas %>% 
   ungroup() %>% 
-  mutate(PropArea = n/sum(n))
+  group_by(Code) %>% 
+  mutate(StratumArea = sum(Area)) 
+  
 
-
-
-# rm(acecs, wsa, acec_pts, wsa_pts)
+rm(acecs, wsa, acec_pts, wsa_pts, raster_cells, wsaSpat, wsAcec)
 ```
 
 

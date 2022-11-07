@@ -1,0 +1,213 @@
+```{r, eval = F, echo = F}
+library(tidyverse)
+```
+
+```{r}
+p2d <- '../data/raw'
+
+plot_status <- read.csv(file.path(p2d, list.files(path = p2d, pattern = "summary.csv")))  %>% 
+  mutate(across(.cols = everything(), ~ str_to_lower(.))) %>% 
+  
+  # humans are humans and typos are an expression of humanity. also  add a 
+  # factor levels which we arrange by and slice the top from . 
+  mutate(
+    Plot.Status = str_trim(Plot.Status, side = "both"),
+  #  Plot.Status = str_replace(Plot.Status, 'rejected', 'not_sampled'),
+    Plot.Status = str_replace(Plot.Status, " ", "_"),
+    psF = factor(Plot.Status, levels = c('sampled', 'not_sampled', 'rejected'))
+    ) %>%  
+  
+  # some numbers are missing leading zereos
+  separate(Plot.ID, into = c('stratum', 'id'), sep = '-') %>% 
+  mutate(id = str_pad(id, 3, pad = "0")) %>% 
+  
+  # group up - and take that 'sampled' from the top - if present
+  unite('Plot.ID', stratum:id, sep = "-", remove = F) %>% 
+  group_by(Plot.ID) %>% 
+  arrange(psF) 
+
+# some plots were not sampled in one year, but subsequently sampled
+status_check <- plot_status %>% # we want to ensure all of these plots are returned as sampled. 
+  mutate(grp_n = n()) %>% 
+  filter(grp_n >= 2, Plot.Status == 'sampled')
+
+plot_status <- plot_status %>% 
+  slice_head(n = 1) %>% 
+  ungroup()
+
+inner_join(plot_status, status_check, by = 'Plot.ID') # take a look for yourself, all good. 
+
+
+# it turns out some oversamples from the original design were not populated over to the yearly tracking 
+# sheets. We can note there status as not_sampled here. 
+plot_status <- plot_status %>% 
+  mutate(across(.cols = Plot.ID:stratum, ~ str_to_upper(.x)))
+pts <- st_read(
+  '/media/sagesteppe/ExternalHD/aimDB/data/raw/AIM_Sample_Design/AIM_Design_Stratification.shp',
+                quiet = T) %>% 
+  left_join(., plot_status, by = c('PLOTID' = 'Plot.ID')) %>% 
+  select(-Panel) %>%  
+  separate(PLOTID, into = c('stratum', 'id'), sep = '-', remove = F) %>% 
+  mutate(across(Plot.Status:psF, ~ replace_na(.x, 'not_sampled'))) %>%  # some over samples were not completed
+  select(Plot.ID = PLOTID, stratum, id, Panel = PANEL, Plot.Status, psF, xcoord, ycoord, geometry)
+  
+plot_status <- pts %>% 
+  select(colnames(plot_status)) %>% 
+  st_drop_geometry()
+
+plot_summary <- plot_status %>% 
+  group_by(stratum, Plot.Status) %>% 
+  summarise(n = n())  %>% 
+  ungroup(Plot.Status) %>% 
+  mutate(total = sum(n)) %>% 
+  pivot_longer(n:total, values_to = 'Number') %>% 
+  mutate(Plot.Status = if_else(name == 'total', 'total', Plot.Status)) %>% 
+  select(-name) %>% 
+  group_by(stratum, Plot.Status) %>% 
+  sample_n(1)
+
+rm(status_check)
+
+# format table for printing
+plot_summary <- plot_summary %>% 
+  pivot_wider(values_from = Number, names_from = Plot.Status) %>% 
+  mutate(stratum = str_to_upper(stratum)) %>% 
+  mutate(across(.cols = everything(), ~ replace_na(.x, 0))) %>% 
+  rename_with(., ~ str_to_sentence(.))
+
+# DERIVE THE VALUES FOR BOTH TOTAL AREA AND AREAS IN ACRES
+
+r <- read.csv(file.path(p2d, 'UFO_strata_areas.csv')) %>% 
+  mutate(ProportionalArea = Cells/sum(Cells)) %>% 
+  select(Stratum, Code, ProportionalArea, Acres)
+
+deSS <- data.frame( # desired sample size per stratum over live of sample design
+  'Stratum' = c("AS", "GR", "MC", "MMS", "OT" , "PJ", "PP", "RI", "SD" , "SS" ), 
+  'DesiredSS' = c(5, 5, 15, 25, 5, 25, 5, 15, 75, 80),
+  'PropTarget' = c(0.01, 0.02, 0.05, 0.1, 0.01, 0.12, 0.01, 0.05, 0.3, 0.33)
+) 
+
+OriginalWeights <- left_join(plot_summary, r, by = c('Stratum' = 'Code')) %>% 
+  left_join(., deSS, by = 'Stratum') %>% 
+  select(StratumName = Stratum.y, Stratum, Total,  NotSampled = Not_sampled, Rejected, Sampled, 
+          DesiredSS, PropArea = ProportionalArea, PropTarget, Acres) %>% 
+  mutate(ApproxStWgt = Acres / (DesiredSS/5))
+
+write.csv(OriginalWeights, '../data/processed/OriginalWeightsSampleDesign.csv', row.names = F)
+
+rm(r, plot_summary, deSS, plot_status)
+```
+
+
+Design Weights 
+
+Under a Simple Random Sample, wherein each stratum would be un-weighted
+
+$$ \pi_{i} = n/N $$
+* Where 
++ $ \pi_{i} $ is the inclusion probability of each individual, i.e. the probability of a site being selected
++ $ n $ sample size, e.g. the number of plots
++ $ N $ population size, i.e. the target frame ? e.g. a BLM field office?
+
+
+Under a weighted design, wherein each stratum has an associated weight e.g. based on it's heterogeneity
+
+$$ W_{i} = 1/ \pi_{i} $$
+* Where
++ $ \pi_{i} $ is the inclusion probability of each individual, i.e. the probability of a site being selected
++ $ W_{i} $ is the weight associated with each site
+
+
+```{r Adjust the Sample Point Weights across entire Field Office.}
+library(spsurvey)
+
+# what I think i need.
+# sites = all base plots with boolean outcomes
+# wgt_cat = the stratum for each plot. 
+# framesize = desired number of samples in each plot.
+# wgt = the weight for each plot...
+
+
+pts <- pts %>% 
+  filter(str_detect(Panel, 'OverSample', negate = T))
+
+aim_sites <- pts %>%
+  mutate(Plot.Status = if_else(Plot.Status == 'sampled', T, F)) %>% 
+  pull(Plot.Status, stratum) # outcome of the plot, was it sampled or not? 
+aim_wgtcat <- pts %>% pull(stratum) # plot stratum ID's, one for each plot
+
+aim_wgt <- OriginalWeights %>% # acreage and proportion give the same results. 
+  select(PropTarget, Stratum) %>% 
+  left_join(., pts %>% select(stratum), by = c('Stratum' = 'stratum')) %>% 
+  # these need to be in right order, not being found by program
+  mutate(Stratum = factor(Stratum, levels = (unique(aim_wgtcat))))  %>% 
+  arrange(Stratum) %>% 
+  pull(PropTarget, Stratum) 
+
+aim_framesize <- OriginalWeights %>%  pull(DesiredSS, Stratum)
+aim_framesize <- aim_framesize[match(unique(aim_wgtcat),names(aim_framesize))]
+
+# sum( # equals sum of frame size
+adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) 
+# )
+
+res <- 1/adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) # proportion of area
+# we can make inference to based on inference area? 
+names(res) <- aim_wgtcat
+res
+
+ab <- data.frame(
+  'Stratum' = names(res),
+  'Weight' = res) %>% 
+  group_by(Stratum) %>% 
+  filter(Weight < Inf) %>% 
+  add_count(name = 'PlotsSampled') %>% 
+  distinct(.keep_all = T) %>% 
+  mutate(WghtPerPlot = Weight / PlotsSampled)
+
+newWgts <- left_join(ab, OriginalWeights %>% 
+  select(TotalAcres = Acres) ) %>% 
+  mutate(WgtAcres = WghtPerPlot * TotalAcres, 
+         AreaInference = TotalAcres * Weight)  %>% 
+  select(Stratum, TotalAcres, AreaInference, WgtAcres, 
+         PlotsSampled, PropInference = Weight, WghtPerPlot) 
+
+```
+
+
+
+```{r Weights for ACEC}
+
+```
+
+
+
+
+```{r}
+
+# Weights under plots re-classified into realized stratum
+
+pps <- '/media/sagesteppe/ExternalHD/plot_post_stratification/data'
+
+classified_Vplots <- read.csv(
+  file.path(pps, 'processed/UFO_Veg_monitoring_CLASSIFIED.csv')) %>% 
+  drop_na() %>% 
+  sf::st_as_sf(coords = c(x = 'Longitude',  y = 'Latitude' ), crs = 4326)%>% 
+  sf::st_transform(26912) %>% 
+  sf::st_buffer(55)
+
+plot_status <- read.csv(file.path(p2d, list.files(path = p2d, pattern = "summary.csv")))[307:409,] 
+classified_Vplots2022 <- read.csv( # but this includes rejected plots... 
+  file.path(pps, 'processed', 'UFO_2022_AIM_CLASSIFIED.csv')) 
+
+pps <- '/media/sagesteppe/ExternalHD/aimDB/data/raw/AIM_Sample_Design'
+a <- sf::st_read(file.path(pps, 'AIM_Design_Stratification.shp'), quiet = T) %>% 
+  sf::st_transform(26912) %>% 
+  sf::st_buffer(55)
+
+ggplot() +
+  geom_sf(data = a, aes(color = STRATUM))
+
+d <- sf::st_join(classified_Vplots, a, left = F)
+
+```

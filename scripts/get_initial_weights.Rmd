@@ -1,5 +1,21 @@
-```{r, eval = F, echo = F}
+---
+title: "Point Weights"
+author: "steppe"
+output:
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+knitr::opts_chunk$set(dpi = 300) 
+knitr::opts_chunk$set(message = "hide")
+knitr::opts_chunk$set(warning = "hide")
+```
+
+```{r Load libraries, warning =F, message = F, echo = F}
 library(tidyverse)
+library(sf)
+library(terra)
 ```
 
 ```{r}
@@ -47,7 +63,8 @@ pts <- st_read(
   left_join(., plot_status, by = c('PLOTID' = 'Plot.ID')) %>% 
   select(-Panel) %>%  
   separate(PLOTID, into = c('stratum', 'id'), sep = '-', remove = F) %>% 
-  mutate(across(Plot.Status:psF, ~ replace_na(.x, 'not_sampled'))) %>%  # some over samples were not completed
+  mutate(across(Plot.Status:psF, ~ replace_na(.x, 'not_sampled'))) %>%  
+  # some over samples were not completed
   select(Plot.ID = PLOTID, stratum, id, Panel = PANEL, Plot.Status, psF, xcoord, ycoord, geometry)
   
 plot_status <- pts %>% 
@@ -94,7 +111,7 @@ OriginalWeights <- left_join(plot_summary, r, by = c('Stratum' = 'Code')) %>%
 
 write.csv(OriginalWeights, '../data/processed/OriginalWeightsSampleDesign.csv', row.names = F)
 
-rm(r, plot_summary, deSS, plot_status)
+rm(r, plot_summary, plot_status)
 ```
 
 
@@ -126,17 +143,17 @@ library(spsurvey)
 # framesize = desired number of samples in each plot.
 # wgt = the weight for each plot...
 
-pts <- pts %>% 
+pts_base <- pts %>% 
   filter(str_detect(Panel, 'OverSample', negate = T))
 
-aim_sites <- pts %>%
+aim_sites <- pts_base %>%
   mutate(Plot.Status = if_else(Plot.Status == 'sampled', T, F)) %>% 
   pull(Plot.Status, stratum) # outcome of the plot, was it sampled or not? 
-aim_wgtcat <- pts %>% pull(stratum) # plot stratum ID's, one for each plot
+aim_wgtcat <- pts_base %>% pull(stratum) # plot stratum ID's, one for each plot
 
 aim_wgt <- OriginalWeights %>% # acreage and proportion give the same results. 
   select(PropTarget, Stratum) %>% 
-  left_join(., pts %>% select(stratum), by = c('Stratum' = 'stratum')) %>% 
+  left_join(., pts_base %>% select(stratum), by = c('Stratum' = 'stratum')) %>% 
   # these need to be in right order, not being found by program
   mutate(Stratum = factor(Stratum, levels = (unique(aim_wgtcat))))  %>% 
   arrange(Stratum) %>% 
@@ -146,7 +163,7 @@ aim_framesize <- OriginalWeights %>%  pull(DesiredSS, Stratum)
 aim_framesize <- aim_framesize[match(unique(aim_wgtcat),names(aim_framesize))]
 
 # sum( # equals sum of frame size
-adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) 
+# adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) 
 # )
 
 res <- 1/adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) # proportion of area
@@ -187,6 +204,8 @@ rm(res, newWghts1)
 ```
 
 
+The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. These areas are intended to have " ... greater than 80 percent vegetation communities  ... ". These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of sites in the region. As our sample design was initiated and completed during a period of drought (See...), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
+
 ```{r Point weights for ACEC and WSA}
 
 spatial_products <- '/media/sagesteppe/ExternalHD/UFO_cartography'
@@ -215,8 +234,9 @@ wsAcec_pts <- pts[unlist(st_intersects(wsAcec, st_transform(pts, st_crs(wsAcec))
 
 # identify the cover of each stratum in the focal area
 wsaSpat <- vect(wsAcec) 
-wsAcec_areas <- terra::expanse(wsaSpat, unit = 'ha') * 2.47105
-wsAcec_areas <- bind_cols(wsAcec, Total_Area =  wsAcec_areas)
+wsAcec_areas <- terra::expanse(wsaSpat, unit = 'ha') * 2.47105 # conversion to acres
+TotalFocalArea <- sum(wsAcec_areas)
+wsAcec_areas <- bind_cols(wsAcec, Total_Area =  wsAcec_areas, TotalFocalArea = TotalFocalArea)
 
 strat_raster <- terra::rast(file.path(design_rast, 'UFO_Strata_reclass_30m.tif'))
 wsaSpat <- project(wsaSpat, crs(strat_raster))
@@ -225,23 +245,56 @@ raster_cells <- extract(strat_raster, wsaSpat) %>%
   group_by(ID, BPS_CODE) %>% 
   count() %>% 
   ungroup(BPS_CODE) %>% 
-  mutate(PropArea = n/sum(n))  %>% 
+  mutate(PropArea = n/sum(n))  %>% # seems off. 
   left_join(., lookup_table, by = c('BPS_CODE' = 'RasterValue'))
 
 options(scipen=999)
 wsAcec_areas <- left_join(wsAcec_areas, raster_cells) %>% 
   mutate(Area = Total_Area * PropArea)  %>% 
-  select(ID, NAME, TYPE, Total_Area, Code, PropArea, Area)
+  select(ID, NAME, TYPE, Total_Area, Code, PropArea, Area, TotalFocalArea)
 
 wsAcec_area_summary <- wsAcec_areas %>% 
   ungroup() %>% 
   group_by(Code) %>% 
-  mutate(StratumArea = sum(Area)) 
-  
+  mutate(TotalArea = sum(Area)) %>% 
+  ungroup() %>% 
+  distinct(Code, .keep_all = T) %>% 
+  select(Stratum = Code, TotalArea, PropArea, TotalFocalArea) %>%
+  mutate(PropArea = TotalArea/sum(TotalArea)) %>% 
+  st_drop_geometry()
+
+base_wsAcec_pts <- wsAcec_pts %>% 
+  filter(str_detect(Panel, 'OverSample', negate = T))
+
+# need to calculate the desired sites per stratum as function of plot weight. 
+wsAcec_area_summary <- wsAcec_area_summary %>% 
+  left_join(., deSS, by = 'Stratum') %>%  # desired ss total_area / wsAcec
+  mutate(DesiredSS = round(DesiredSS * (nrow(base_wsAcec_pts)/255))) %>% 
+  drop_na()
+
+wsAcec_pt_draw <- wsAcec_pts %>% 
+  group_by(stratum, Plot.Status) %>% 
+  count() %>% 
+  st_drop_geometry() %>% 
+  pivot_wider(id_cols = stratum, names_from = Plot.Status, values_from = n, 
+              values_fill = 0) %>% 
+  rowwise() %>% 
+  mutate(total = sum(across(not_sampled:sampled)), .before = 'not_sampled')
+
+wsAcec_OriginalWeights <- left_join(wsAcec_area_summary, wsAcec_pt_draw,
+                                    by = c('Stratum' = 'stratum')) %>% 
+  select(Stratum, Total = total, NotSampled = not_sampled, Rejected = rejected, 
+         Sampled = sampled, DesiredSS, PropArea, PropTarget, Acres =  TotalArea) %>% 
+  mutate(ApproxStWgt =  if_else(DesiredSS >= 5, (Acres/DesiredSS) * 5, (DesiredSS/5) * Acres))
 
 rm(acecs, wsa, acec_pts, wsa_pts, raster_cells, wsaSpat, wsAcec)
 ```
 
+
+
+```{r}
+colnames(OriginalWeights)
+```
 
 ```{r Point weights for the National Monument writeups}
 

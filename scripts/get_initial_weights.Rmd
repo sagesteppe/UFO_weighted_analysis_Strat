@@ -2,20 +2,23 @@
 title: "Point Weights"
 author: "steppe"
 output:
+  pdf_document: default
   word_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F)
 knitr::opts_chunk$set(dpi = 300) 
-knitr::opts_chunk$set(message = "hide")
-knitr::opts_chunk$set(warning = "hide")
+knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(warning = F)
 ```
 
-```{r Load libraries, warning =F, message = F, echo = F}
+```{r Load libraries, warning = F, message = F, echo = F}
 library(tidyverse)
 library(sf)
 library(terra)
+library(spsurvey)
+source('functions.R')
 ```
 
 ```{r}
@@ -51,7 +54,7 @@ plot_status <- plot_status %>%
   slice_head(n = 1) %>% 
   ungroup()
 
-inner_join(plot_status, status_check, by = 'Plot.ID') # take a look for yourself, all good. 
+# inner_join(plot_status, status_check, by = 'Plot.ID') # take a look for yourself, all good. 
 
 # it turns out some oversamples from the original design were not populated over to the yearly tracking 
 # sheets. We can note there status as not_sampled here. 
@@ -117,90 +120,26 @@ rm(r, plot_summary, plot_status)
 
 Design Weights 
 
-Under a Simple Random Sample, wherein each stratum would be un-weighted
+Under a Simple Random Sample, wherein each stratum would be un-weighed
 
-$$ \pi_{i} = n/N $$
-* Where 
-+ $ \pi_{i} $ is the inclusion probability of each individual, i.e. the probability of a site being selected
-+ $ n $ sample size, e.g. the number of plots
-+ $ N $ population size, e.g. the target is geographic size of the BLM field office
+$$\pi_{i} = n/N$$
+
++  $\pi_{i}$ is the inclusion probability of each individual, i.e. the probability of a site being selected 
++  $n$ sample size, e.g. the number of plots 
++  $N$ population size, e.g. the target is geographic size of the BLM field office 
 
 
-Under a weighted design, wherein each stratum has an associated weight e.g. based on it's heterogeneity
+Under a weighed design, wherein each stratum has an associated weight e.g. based on it's heterogeneity
 
-$$ W_{i} = 1/ \pi_{i} $$
-* Where
-+ $ \pi_{i} $ is the inclusion probability of each individual, i.e. the probability of a site being selected
-+ $ W_{i} $ is the weight associated with each site
+$$W_{i} = 1/ \pi_{i}$$
+
++ $\pi_{i}$ is the inclusion probability of each individual, i.e. the probability of a site being selected 
++ $W_{i}$ is the weight associated with each site 
 
 
 ```{r Adjust the Sample Point Weights across entire Field Office}
-library(spsurvey)
 
-# what I think i need.
-# sites = all base plots with boolean outcomes
-# wgt_cat = the stratum for each plot. 
-# framesize = desired number of samples in each plot.
-# wgt = the weight for each plot...
-
-pts_base <- pts %>% 
-  filter(str_detect(Panel, 'OverSample', negate = T))
-
-aim_sites <- pts_base %>%
-  mutate(Plot.Status = if_else(Plot.Status == 'sampled', T, F)) %>% 
-  pull(Plot.Status, stratum) # outcome of the plot, was it sampled or not? 
-aim_wgtcat <- pts_base %>% pull(stratum) # plot stratum ID's, one for each plot
-
-aim_wgt <- OriginalWeights %>% # acreage and proportion give the same results. 
-  select(PropTarget, Stratum) %>% 
-  left_join(., pts_base %>% select(stratum), by = c('Stratum' = 'stratum')) %>% 
-  # these need to be in right order, not being found by program
-  mutate(Stratum = factor(Stratum, levels = (unique(aim_wgtcat))))  %>% 
-  arrange(Stratum) %>% 
-  pull(PropTarget, Stratum) 
-
-aim_framesize <- OriginalWeights %>%  pull(DesiredSS, Stratum)
-aim_framesize <- aim_framesize[match(unique(aim_wgtcat),names(aim_framesize))]
-
-# sum( # equals sum of frame size
-# adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) 
-# )
-
-res <- 1/adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) # proportion of area
-# we can make inference to based on inference area? 
-names(res) <- aim_wgtcat
-
-rm(aim_wgt, aim_wgtcat, aim_framesize, aim_sites)
-
-newWghts <- data.frame(
-  'Stratum' = names(res),
-  'Weight' = res) %>% 
-  group_by(Stratum) %>% 
-  filter(Weight < Inf) %>% 
-  add_count(name = 'PlotsSampled') %>% 
-  distinct(.keep_all = T) %>% 
-  mutate(WghtPerPlot = Weight / PlotsSampled)
-
-newWghts1 <- data.frame(
-  'Stratum' = names(res),
-  'Weight' = res
-) %>% group_by(Stratum, Weight) %>%
-  filter(Weight == Inf) %>% 
-  add_count(name = 'PlotsRejected')  %>% 
-  distinct(.keep_all = T) %>% 
-  ungroup %>% 
-  select(-Weight)
-
-newWghts <- left_join(newWghts, newWghts1)
-
-newWghts <- left_join(newWghts, OriginalWeights %>% 
-  select(TotalAcres = Acres, Rejected) ) %>% 
-  mutate(WgtAcres = WghtPerPlot * TotalAcres, 
-         AreaInference = TotalAcres * Weight)  %>% 
-  select(Stratum, TotalAcres, AreaInference, WgtAcres, 
-         PlotsSampled, PlotsRejected, PropInference = Weight, WghtPerPlot) 
-
-rm(res, newWghts1)
+newWghts <- plotWeigher(OriginalWeights, pts)
 ```
 
 
@@ -287,14 +226,79 @@ wsAcec_OriginalWeights <- left_join(wsAcec_area_summary, wsAcec_pt_draw,
          Sampled = sampled, DesiredSS, PropArea, PropTarget, Acres =  TotalArea) %>% 
   mutate(ApproxStWgt =  if_else(DesiredSS >= 5, (Acres/DesiredSS) * 5, (DesiredSS/5) * Acres))
 
-rm(acecs, wsa, acec_pts, wsa_pts, raster_cells, wsaSpat, wsAcec)
+wsAcec_OriginalWeights <- drop_na(wsAcec_OriginalWeights)
+
+
+plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
+
+
+
+
+
+  pts_base <- filter(wsAcec_pts, str_detect(Panel, 'OverSample', negate = T))
+  
+  aim_sites <- pts_base %>%
+    mutate(Plot.Status = if_else(Plot.Status == 'sampled', T, F)) %>% 
+    pull(Plot.Status, stratum)
+  aim_wgtcat <- pull(pts_base, stratum)
+  
+  aim_wgt <- wsAcec_OriginalWeights %>% # acreage and proportion give the same results. 
+    filter(Sampled >= 1) %>% 
+    select(PropTarget, Stratum) %>% 
+    left_join(., pts_base %>% select(stratum), by = c('Stratum' = 'stratum')) %>% 
+    mutate(Stratum = factor(Stratum, levels = (unique(aim_wgtcat))))  %>% 
+    arrange(Stratum) %>% 
+    pull(PropTarget, Stratum) 
+  
+  aim_framesize <- pull(wsAcec_OriginalWeights, DesiredSS, Stratum)
+  aim_framesize <- aim_framesize[match(unique(aim_wgtcat),names(aim_framesize))]
+  
+  res <- 1/adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) 
+  names(res) <- aim_wgtcat
+  
+  newWghts <- data.frame(
+    'Stratum' = names(res),
+    'Weight' = res) %>% 
+    group_by(Stratum) %>% 
+    filter(Weight < Inf) %>% 
+    add_count(name = 'PlotsSampled') %>% 
+    distinct(.keep_all = T) %>% 
+    mutate(WghtPerPlot = Weight / PlotsSampled)
+  
+  newWghts1 <- data.frame(
+    'Stratum' = names(res),
+    'Weight' = res) %>% 
+    group_by(Stratum, Weight) %>%
+    filter(Weight == Inf) %>% 
+    add_count(name = 'PlotsRejected')  %>% 
+    distinct(.keep_all = T) %>% 
+    ungroup %>% 
+    select(-Weight)
+  
+  newWghts <- left_join(newWghts, newWghts1) %>% 
+    left_join(., OriginalWeights %>% 
+              select(TotalAcres = Acres, Rejected) ) %>% 
+    mutate(WgtAcres = WghtPerPlot * TotalAcres, 
+           AreaInference = TotalAcres * Weight)  %>% 
+    select(Stratum, TotalAcres, AreaInference, WgtAcres, 
+           PlotsSampled, PlotsRejected, PropInference = Weight, WghtPerPlot) 
+  
+
+rm(acecs, wsa, raster_cells, wsaSpat, wsAcec)
+
+aim_wgt
+
 ```
 
 
 
-```{r}
-colnames(OriginalWeights)
-```
+
+
+
+
+
+
+
 
 ```{r Point weights for the National Monument writeups}
 
@@ -305,7 +309,6 @@ monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly
   summarize(geometry = st_union(geometry)) 
 
 mnmt_pts <- pts[unlist(st_intersects(monuments, st_transform(pts, st_crs(monuments)))),]
-
 
 
 ggplot(monuments) +

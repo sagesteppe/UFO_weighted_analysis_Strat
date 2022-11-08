@@ -2,8 +2,9 @@
 title: "Point Weights"
 author: "steppe"
 output:
-  pdf_document: default
   word_document: default
+  pdf_document: default
+always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
@@ -114,7 +115,17 @@ OriginalWeights <- left_join(plot_summary, r, by = c('Stratum' = 'Code')) %>%
 
 write.csv(OriginalWeights, '../data/processed/OriginalWeightsSampleDesign.csv', row.names = F)
 
-rm(r, plot_summary, plot_status, p2d)
+OriginalWeights %>% 
+  mutate(PropArea = round(PropArea, 3)) %>% 
+  mutate(across(.cols = c(Acres, ApproxStWgt),  round)) %>% 
+  arrange(-Acres) %>% 
+  ungroup() %>% 
+  select(StratumName, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
+  knitr::kable(., digits = 2, format.args = list(big.mark = ","), 
+               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 'Prop. Site', 'No. Sites', 'Site Weight'), 
+               align = c("c", rep('r', times = (ncol(.) - 1)))) 
+  
+rm(r, plot_summary, plot_status)
 ```
 
 
@@ -141,11 +152,22 @@ $$W_{i} = 1/ \pi_{i}$$
 
 Full_newWghts <- plotWeigher(OriginalWeights, pts)
 
+Full_newWghts %>% 
+  mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
+  mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
+  arrange(-TotalAcres) %>% 
+  select(Stratum, PropInference, TotalAcres:WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  knitr::kable(., digits = 2, format.args = list(big.mark = ","),
+               col.names = c('Stratum', 'Prop.', 'Total', 'Inference', 'Acre', 'Sampled', 'Rejected'),
+               align = c("c", rep('r', times = (ncol(.) - 1))))
+
 rm(OriginalWeights)
 ```
 
 
 The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. These areas are intended to have " ... greater than 80 percent vegetation communities  ... ". These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of sites in the region. As our sample design was initiated and completed during a period of drought (See...), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
+
+
 
 ```{r Point weights for ACEC and WSA}
 
@@ -193,7 +215,6 @@ raster_cells <- extract(strat_raster, wsaSpat) %>%
 
 rm(wsaSpat, TotalFocalArea)
 
-options(scipen=999)
 wsAcec_areas <- left_join(wsAcec_areas, raster_cells) %>% 
   mutate(Area = Total_Area * PropArea)  %>% 
   select(ID, NAME, TYPE, Total_Area, Code, PropArea, Area, TotalFocalArea)
@@ -235,75 +256,7 @@ wsAcec_OriginalWeights <- left_join(wsAcec_area_summary, wsAcec_pt_draw,
 wsAcec_OriginalWeights <- drop_na(wsAcec_OriginalWeights)
 
 
-plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
-
-
-  pts_base <- filter(wsAcec_pts, str_detect(Panel, 'OverSample', negate = T))
-  
-  aim_sites <- pts_base %>%
-    mutate(Plot.Status = if_else(Plot.Status == 'sampled', T, F)) %>% 
-    pull(Plot.Status, stratum)
-  aim_wgtcat <- pull(pts_base, stratum)
-  
-  aim_wgt <- wsAcec_OriginalWeights %>% # acreage and proportion give the same results. 
-    select(PropTarget, Stratum) %>% 
-    left_join(., pts_base %>% select(stratum), by = c('Stratum' = 'stratum')) %>% 
-    mutate(Stratum = factor(Stratum, levels = (unique(aim_wgtcat))))  %>% 
-    arrange(Stratum) %>% 
-    pull(PropTarget, Stratum)
-  
-  aim_framesize <- pull(wsAcec_OriginalWeights, DesiredSS, Stratum)
-  
-  aim_sites <- aim_sites[order(names(aim_sites))] 
-  aim_wgt <- aim_wgt[order(names(aim_wgt))] 
-  aim_wgtcat <- aim_wgtcat[order(aim_wgtcat)]
-  aim_framesize <- aim_framesize[match(unique(aim_wgtcat),names(aim_framesize))]
-  
-  aim_wgt <- aim_wgt[!is.na(names(aim_wgt))]
-  
-  res <- adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) 
-  names(res) <- aim_wgtcat
-
-  res <- ifelse(res > 1, 1/res, res)
-  
-  
-  # RES NOT SORTING CORRECTLY... LET'S RUN FULL MATCHES ON ALL THE DATA GOING INTO THE FUNCTION
-  
-  
-  newWghts <- data.frame(
-    'Stratum' = names(res),
-    'Weight' = res) %>% 
-    group_by(Stratum) %>% 
-    filter(Weight < Inf) %>% 
-    add_count(name = 'PlotsSampled') %>% 
-    distinct(.keep_all = T) %>% 
-    mutate(WghtPerPlot = Weight / PlotsSampled)
-  
-  newWghts1 <- data.frame(
-    'Stratum' = names(res),
-    'Weight' = res) %>% 
-    group_by(Stratum, Weight) %>%
-    filter(Weight == Inf) %>% 
-    add_count(name = 'PlotsRejected')  %>% 
-    distinct(.keep_all = T) %>% 
-    ungroup %>% 
-    select(-Weight)
-  
-  newWghts <- left_join(newWghts, newWghts1) %>% 
-    left_join(., OriginalWeights %>% 
-              select(TotalAcres = Acres, Rejected) ) %>% 
-    arrange(-Weight) %>%  # this works to catch any
-    group_by(Stratum) %>% # values which may be introduced
-    slice_head(n = 1) %>%  # by an empty second data.frame
-    mutate(WgtAcres = WghtPerPlot * TotalAcres, 
-           AreaInference = TotalAcres * Weight)  %>% 
-    select(Stratum, TotalAcres, AreaInference, WgtAcres, 
-           PlotsSampled, PlotsRejected, PropInference = Weight, WghtPerPlot) 
-  
-
 rm(raster_cells, wsaSpat, wsAcec)
-
-
 ```
 
 
@@ -330,7 +283,6 @@ mnmt_pts <- pts[unlist(st_intersects(monuments, st_transform(pts, st_crs(monumen
 ggplot(monuments) +
   geom_sf()
 
-rm()
 ```
 
 

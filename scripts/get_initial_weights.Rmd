@@ -114,7 +114,7 @@ OriginalWeights <- left_join(plot_summary, r, by = c('Stratum' = 'Code')) %>%
 
 write.csv(OriginalWeights, '../data/processed/OriginalWeightsSampleDesign.csv', row.names = F)
 
-rm(r, plot_summary, plot_status)
+rm(r, plot_summary, plot_status, p2d)
 ```
 
 
@@ -139,7 +139,9 @@ $$W_{i} = 1/ \pi_{i}$$
 
 ```{r Adjust the Sample Point Weights across entire Field Office}
 
-newWghts <- plotWeigher(OriginalWeights, pts)
+Full_newWghts <- plotWeigher(OriginalWeights, pts)
+
+rm(OriginalWeights)
 ```
 
 
@@ -168,6 +170,8 @@ wsa <- st_read(file.path(spatial_products, 'BLM_CO_WSA/nlcs_wsa_poly.shp'),
 wsAcec <- bind_rows(acecs, wsa) %>% 
   mutate(ID = 1:n(), .before = 1)
 
+rm(acecs, wsa)
+
 # identify all points which fell in the focal areas
 wsAcec_pts <- pts[unlist(st_intersects(wsAcec, st_transform(pts, st_crs(wsAcec)))),]
 
@@ -186,6 +190,8 @@ raster_cells <- extract(strat_raster, wsaSpat) %>%
   ungroup(BPS_CODE) %>% 
   mutate(PropArea = n/sum(n))  %>% # seems off. 
   left_join(., lookup_table, by = c('BPS_CODE' = 'RasterValue'))
+
+rm(wsaSpat, TotalFocalArea)
 
 options(scipen=999)
 wsAcec_areas <- left_join(wsAcec_areas, raster_cells) %>% 
@@ -232,9 +238,6 @@ wsAcec_OriginalWeights <- drop_na(wsAcec_OriginalWeights)
 plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
 
 
-
-
-
   pts_base <- filter(wsAcec_pts, str_detect(Panel, 'OverSample', negate = T))
   
   aim_sites <- pts_base %>%
@@ -243,18 +246,29 @@ plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
   aim_wgtcat <- pull(pts_base, stratum)
   
   aim_wgt <- wsAcec_OriginalWeights %>% # acreage and proportion give the same results. 
-    filter(Sampled >= 1) %>% 
     select(PropTarget, Stratum) %>% 
     left_join(., pts_base %>% select(stratum), by = c('Stratum' = 'stratum')) %>% 
     mutate(Stratum = factor(Stratum, levels = (unique(aim_wgtcat))))  %>% 
     arrange(Stratum) %>% 
-    pull(PropTarget, Stratum) 
+    pull(PropTarget, Stratum)
   
   aim_framesize <- pull(wsAcec_OriginalWeights, DesiredSS, Stratum)
+  
+  aim_sites <- aim_sites[order(names(aim_sites))] 
+  aim_wgt <- aim_wgt[order(names(aim_wgt))] 
+  aim_wgtcat <- aim_wgtcat[order(aim_wgtcat)]
   aim_framesize <- aim_framesize[match(unique(aim_wgtcat),names(aim_framesize))]
   
-  res <- 1/adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) 
+  aim_wgt <- aim_wgt[!is.na(names(aim_wgt))]
+  
+  res <- adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) 
   names(res) <- aim_wgtcat
+
+  res <- ifelse(res > 1, 1/res, res)
+  
+  
+  # RES NOT SORTING CORRECTLY... LET'S RUN FULL MATCHES ON ALL THE DATA GOING INTO THE FUNCTION
+  
   
   newWghts <- data.frame(
     'Stratum' = names(res),
@@ -278,15 +292,17 @@ plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
   newWghts <- left_join(newWghts, newWghts1) %>% 
     left_join(., OriginalWeights %>% 
               select(TotalAcres = Acres, Rejected) ) %>% 
+    arrange(-Weight) %>%  # this works to catch any
+    group_by(Stratum) %>% # values which may be introduced
+    slice_head(n = 1) %>%  # by an empty second data.frame
     mutate(WgtAcres = WghtPerPlot * TotalAcres, 
            AreaInference = TotalAcres * Weight)  %>% 
     select(Stratum, TotalAcres, AreaInference, WgtAcres, 
            PlotsSampled, PlotsRejected, PropInference = Weight, WghtPerPlot) 
   
 
-rm(acecs, wsa, raster_cells, wsaSpat, wsAcec)
+rm(raster_cells, wsaSpat, wsAcec)
 
-aim_wgt
 
 ```
 

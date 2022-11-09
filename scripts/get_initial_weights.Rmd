@@ -3,10 +3,57 @@ title: "Point Weights"
 author: "steppe"
 output:
   word_document: default
-  pdf_document: default
 always_allow_html: true
 ---
-This AIM study was designed in order to both maximize the environmental habitats which it represented across the field office, and be able to inform our understanding of high priority management areas. The first of these goals, makes the design 
+
+
+This AIM study was designed with three major principals in mind. The first, was maximizing the number of environments which it represents across the field office. The UFO field office varies by nearly XXXX feet, XXXX average precipitation, XXXX average temperatures, and displays a diversity of environments; and this sample design included this entire range of variation. To ensure that these diverse areas were represented, ten major strata were identified *see table*, in order to ensure that they had plots located in them in order to evaluate their ecological *integrity*. However, the management concerns, actions, and heterogeneity (internal dissimilarity) of these strata differ. To best understand the ecological context of these strata, and what management actions the BLM may take, the proportion of plots were tailored to each stratum. The third principal was that all plots be randomly placed within the stratum, which allows *inference* to be made from plots to the, unsampled, entirety of the stratum. This *weighted sample design* allows us to maximize statistical understanding while minimizing the field effort required to undertake it. 
+
+The initial sample design followed the general AIM implementation design to contain 255 plots to be sampled across five years. Sampling over a five year period is essential in order to ensure that plots are visited during periods wherein the vegetation is *reproductively active*, hence identifiable. A benefit of this prolonged time frame is that anomalous weather conditions are unlikely to affect the plots across the entire time period. For example, the condition of plots may be compared in a wet year, to a dry year, as referenced from a year with typical rainfall. In order to avoid random unexpected processes which cluster in space which may occur over the period of conducting the sample design, the entire design is split into a *panel* for each year of sampling. Each panel is composed of a subset of randomly selected points within the sample design and avoids missing swathes of the *target frame* during the sample period due to an event such as a prolonged wildfire. 
+
+
+#### the design may be represented in simple mathematical terms
+
+Using an example from a stratum which is of high land management importance, sagebrush steppe, we illustrate the site selection process. While the aerial extent of sagebrush-steppe in the target frame is roughly one quarter (0.246), the stratum makes up one third (0.33) of all sites.
+
+In order to convey the number of plots drawn in any stratum the following equation is representative. 
+
+$$
+n \;=\; \dfrac{N * \pi_{i}} {1 / panels}
+$$
+
++ $N$ the total number of plots in the sample design, *i.e. 255*
++ $\pi_{i}$ the inclusion probability of a plot in each stratum being drawn, *e.g. 0.33 targets the placement of a third of all plots to be put into the Sage-steppe Stratum*
++ $panels$ the number of design panels, *i.e. the number of years to stretch sampling across*
+
+For sagebrush steppe we will then have: 
+
+$$ 
+16.83 \;=\; \dfrac{255 * 0.33 }{1/5}  
+$$
+plots for each panel, which will round down to 16 in order to accommodate representation of some of our other strata.
+
+
+The **weight** of a plot is the amount of acres it represents within a stratum, we utilize this metric to help derive *measures of uncertainty* while making inference from our sampled plots to the whole stratum. 
+
+$$
+W_{i} = \dfrac{Stratum_{area}}{n}
+$$
++ ${W_{i}}$ the weight acres, *i.e. the area which a plot represents within the target frame*
++ ${Stratum_{area}$ the total area of the stratum in the area of analysis *e.g. 214,023 acres of sage-steppe*
++ ${n}$ the total number of plots in a stratumm *e.g. for a panel of sage steppe 16*
+
+Each sagebrush-steppe plot will have a weight of
+
+$$
+13,376 \;=\; \dfrac{214,023}{16}
+$$
+acres per plot, which it represents. 
+
+#### Areas of Analysis
+
+The original AIM design covers the entire target frame of the UFO field office. However, a few additional analytical  and management sub-units exist within this extent. Their are two National Monuments, the  Gunnison Gorge, and Dominguez-Escalente, which is partially administered by the Grand Junction Field Office (GJFO) which have different maangement directives which distinguish them from the majority of UFO land. Likewise there are numerous Wilderness Study Areas (WSA's), and Area's of critical Environmental Concern (ACEC's), throughout the field office. The UFO intends these areas to have higher proportions of certain metrics relative to the remainder of BLM land. 
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F)
@@ -129,26 +176,6 @@ OriginalWeights %>%
 rm(r, plot_summary, plot_status)
 ```
 
-
-Design Weights 
-
-Under a Simple Random Sample, wherein each stratum would be un-weighed
-
-$$\pi_{i} = n/N$$
-
-+  $\pi_{i}$ is the inclusion probability of each individual, i.e. the probability of a site being selected 
-+  $n$ sample size, e.g. the number of plots 
-+  $N$ population size, e.g. the target is geographic size of the BLM field office 
-
-
-Under a weighed design, wherein each stratum has an associated weight e.g. based on it's heterogeneity
-
-$$W_{i} = 1/ \pi_{i}$$
-
-+ $\pi_{i}$ is the inclusion probability of each individual, i.e. the probability of a site being selected 
-+ $W_{i}$ is the weight associated with each site 
-
-
 ```{r Adjust the Sample Point Weights across entire Field Office}
 
 Full_newWghts <- plotWeigher(OriginalWeights, pts)
@@ -270,13 +297,15 @@ wsAcec_OriginalWeights %>%
 
 
 rm(raster_cells, wsaSpat, wsAcec, wsAcec_area_summary, wsAcec_pt_draw,
-   base_wsAcec_pts, raster_cells, wsAcec_areas, wsAcec_pts, design_rast)
+   base_wsAcec_pts, raster_cells, wsAcec_areas, design_rast)
 ```
 
 
+Strata with five or more plots, would allow for temporal analyses to  be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
+
 ```{r}
 plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
-rm(wsAcec_OriginalWeights)
+rm(wsAcec_OriginalWeights, wsAcec_pts)
 ```
 
 
@@ -297,12 +326,13 @@ monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly
   summarize(geometry = st_union(geometry)) %>% 
   mutate(ID = 1:n(), .before = 1)
 
-mnmt_pts <- pts[unlist(st_intersects(monuments, st_transform(pts, st_crs(monuments)))),]
-
+mnmt_pts <- pts[unlist(st_intersects(monuments, 
+                                     st_transform(pts, st_crs(monuments)))),]
 mnmtSpat <- vect(monuments) %>% project(., crs(strat_raster))
 mnmt_areas <- terra::expanse(mnmtSpat, unit = 'ha') * 2.47105 # conversion to acres
 TotalFocalArea <- sum(mnmt_areas)
-mnmt_areas <- bind_cols(ID = 1:2, Total_Area =  mnmt_areas, TotalFocalArea = TotalFocalArea)
+mnmt_areas <- bind_cols(ID = 1:2, Total_Area =  mnmt_areas, 
+                        TotalFocalArea = TotalFocalArea)
 
 raster_cells <- extract(strat_raster, mnmtSpat) %>% 
   group_by(ID, BPS_CODE) %>% 
@@ -333,7 +363,7 @@ base_mnmt_pts <- mnmt_pts %>%
 # need to calculate the desired sites per stratum as function of plot weight. 
 mnmt_area_summary <- mnmt_area_summary %>% 
   left_join(., deSS, by = 'Stratum') %>%  # desired ss total_area / wsAcec
-  mutate(DesiredSS = round(DesiredSS * (nrow(base_mmt_pts)/255))) %>% 
+  mutate(DesiredSS = round(DesiredSS * (nrow(base_mnmt_pts)/255))) %>% 
   drop_na()
 
 mnmt_pt_draw <- mnmt_pts %>% 
@@ -345,52 +375,26 @@ mnmt_pt_draw <- mnmt_pts %>%
   rowwise() %>% 
   mutate(total = sum(across(not_sampled:sampled)), .before = 'not_sampled')
 
-mmt_OriginalWeights <- left_join(mmt_area_summary, mmt_pt_draw,
+mnmt_OriginalWeights <- left_join(mnmt_area_summary, mnmt_pt_draw,
                                     by = c('Stratum' = 'stratum')) %>% 
   select(Stratum, Total = total, NotSampled = not_sampled, Rejected = rejected, 
          Sampled = sampled, DesiredSS, PropArea, PropTarget, Acres =  TotalArea) %>% 
+  mutate(across(.cols = Total:Sampled, ~replace_na(.x, 0))) %>% 
   mutate(ApproxStWgt =  if_else(DesiredSS >= 5, (Acres/DesiredSS) * 5, (DesiredSS/5) * Acres))
 
-mmt_OriginalWeights <- drop_na(mmt_OriginalWeights)
+mnmt_OriginalWeights <- drop_na(mnmt_OriginalWeights)
+mnmt_OriginalWeights
 
-
-
-# rm(uFo, strat_raster, p2d, lookup_table)
+rm(uFO, strat_raster, p2d, lookup_table, mnmt_ptp_draw, mnmt_area_summary, 
+   base_mnmt_pts, mnmt_areas, mnmtSpat, raster_cells, deSS, mnmt_pt_draw)
 ```
 
 
-
-
-
-
-
-
-
-
-
+Strata with five or more plots, would allow for temporal analyses to  be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
 
 ```{r}
-
-# Weights under plots re-classified into realized stratum
-
-pps <- '/media/sagesteppe/ExternalHD/plot_post_stratification/data'
-
-classified_Vplots <- read.csv(
-  file.path(pps, 'processed/UFO_Veg_monitoring_CLASSIFIED.csv')) %>% 
-  drop_na() %>% 
-  sf::st_as_sf(coords = c(x = 'Longitude',  y = 'Latitude' ), crs = 4326)%>% 
-  sf::st_transform(26912) %>% 
-  sf::st_buffer(55)
-
-plot_status <- read.csv(file.path(p2d, list.files(path = p2d, pattern = "summary.csv")))[307:409,] 
-classified_Vplots2022 <- read.csv( # but this includes rejected plots... 
-  file.path(pps, 'processed', 'UFO_2022_AIM_CLASSIFIED.csv')) 
-
-pps <- '/media/sagesteppe/ExternalHD/aimDB/data/raw/AIM_Sample_Design'
-a <- sf::st_read(file.path(pps, 'AIM_Design_Stratification.shp'), quiet = T) %>% 
-  sf::st_transform(26912) %>% 
-  sf::st_buffer(55)
-
-d <- sf::st_join(classified_Vplots, a, left = F)
-
+plotWeigher(mnmt_OriginalWeights, mnmt_pts)
 ```
+
+Under the master sample design the number of plots which could be inferred from in the Salt Desert stratum would be 17. However, due to an intensification a surplus of 5, plots were sampled, however as these plots exceed the number of ... Weird problem. 
+

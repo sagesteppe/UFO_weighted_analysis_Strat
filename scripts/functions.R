@@ -63,7 +63,8 @@ plotWeigher <- function(x, pts){
     mutate(WgtAcres = WghtPerPlot * TotalAcres, 
            AreaInference = TotalAcres * Weight)  %>% 
     select(Stratum, TotalAcres, AreaInference, WgtAcres, 
-           PlotsSampled, PlotsRejected, PropInference = Weight, WghtPerPlot) 
+           PlotsSampled, PlotsRejected, PropInference = Weight, WghtPerPlot)  %>% 
+    mutate(across(where(is.numeric), ~ replace_na(.x, 0)))
   
   return(newWghts)
   

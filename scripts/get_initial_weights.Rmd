@@ -11,10 +11,11 @@ This AIM study was designed with three major principals in mind. The first, was 
 
 The initial sample design followed the general AIM implementation design to contain 255 plots to be sampled across five years. Sampling over a five year period is essential in order to ensure that plots are visited during periods wherein the vegetation is *reproductively active*, hence identifiable. A benefit of this prolonged time frame is that anomalous weather conditions are unlikely to affect the plots across the entire time period. For example, the condition of plots may be compared in a wet year, to a dry year, as referenced from a year with typical rainfall. In order to avoid random unexpected processes which cluster in space which may occur over the period of conducting the sample design, the entire design is split into a *panel* for each year of sampling. Each panel is composed of a subset of randomly selected points within the sample design and avoids missing swathes of the *target frame* during the sample period due to an event such as a prolonged wildfire. 
 
+The location of the random plots for AIM are generated via computer and a number of them may not feasibly be sampled. In general potential plots are most often, anecdotally, rejected for: being located on steep slopes which are dangerous for field crews to sample, requiring access to cross private land to access BLM which landowners deny. The inability of these plots to be sampled reduces the spatial extent of the strata which we may use statistics to infer across, and increases the measures of uncertainty associated with these areas. In this section we review the original sample design, derive original sample weights for sub-units of the field office, and calculate the weights for each of these units after the sample design has been completed. 
 
 #### the design may be represented in simple mathematical terms
 
-Using an example from a stratum which is of high land management importance, sagebrush steppe, we illustrate the site selection process. While the aerial extent of sagebrush-steppe in the target frame is roughly one quarter (0.246), the stratum makes up one third (0.33) of all sites.
+Using an example from a stratum which is of high land management importance, sagebrush-steppe, we illustrate the site selection process. While the aerial extent of sagebrush-steppe in the target frame is roughly one quarter (0.246), the stratum makes up one third (0.33) of all sites.
 
 In order to convey the number of plots drawn in any stratum the following equation is representative. 
 
@@ -52,8 +53,7 @@ acres per plot, which it represents.
 
 #### Areas of Analysis
 
-The original AIM design covers the entire target frame of the UFO field office. However, a few additional analytical  and management sub-units exist within this extent. Their are two National Monuments, the  Gunnison Gorge, and Dominguez-Escalente, which is partially administered by the Grand Junction Field Office (GJFO) which have different maangement directives which distinguish them from the majority of UFO land. Likewise there are numerous Wilderness Study Areas (WSA's), and Area's of critical Environmental Concern (ACEC's), throughout the field office. The UFO intends these areas to have higher proportions of certain metrics relative to the remainder of BLM land. 
-
+The original AIM design covers the entire target frame of the UFO field office. However, a few additional analytical  and management sub-units exist within this extent. Their are two National Monuments, the Gunnison Gorge, and Dominguez-Escalente, which is partially administered by the Grand Junction Field Office (GJFO) which have different management directives which distinguish them from the majority of UFO land. Likewise there are numerous Wilderness Study Areas (WSA's), and Area's of critical Environmental Concern (ACEC's), throughout the field office. The UFO intends these areas to have higher proportions of certain metrics relative to the remainder of BLM land. 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F)
@@ -173,7 +173,7 @@ OriginalWeights %>%
                col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 'Prop. Site', 'No. Sites', 'Plot Wt.'), 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
   
-rm(r, plot_summary, plot_status)
+rm(r, plot_summary)
 ```
 
 ```{r Adjust the Sample Point Weights across entire Field Office}
@@ -397,4 +397,48 @@ plotWeigher(mnmt_OriginalWeights, mnmt_pts)
 ```
 
 Under the master sample design the number of plots which could be inferred from in the Salt Desert stratum would be 17. However, due to an intensification a surplus of 5, plots were sampled, however as these plots exceed the number of ... Weird problem. 
+
+
+```{r}
+
+ps <- plot_status %>% 
+  filter(str_detect(Panel, 'OverSample', negate = T)) %>% 
+  group_by(stratum, Plot.Status) %>% 
+  count() %>% 
+  mutate(across(where(is.numeric), ~ replace_na(.x, 0))) %>% 
+  drop_na() %>% 
+  bind_rows(., data.frame(
+    stratum = 'GR', Plot.Status = 'rejected', n = 0)) %>% 
+  mutate(Plot.Status = factor(Plot.Status, levels = c('sampled', 'rejected')),
+         stratum = factor(stratum, levels = c('AS', 'SS', 'GR', 'MMS', 'OT', 'PJ', 'PP', 'SD', 'RI', 'MC')))
+
+ggplot(data = ps,
+       aes(axis1 = stratum, axis2 = Plot.Status, y = n), color = NA) +
+  geom_alluvium(aes(fill = Plot.Status), curve_type = "arctangent", width = 0.25) +
+  geom_stratum(color = 'grey75') +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)), color = 'grey25') +
+  scale_fill_manual(values = c('forestgreen', '#e71313')) +
+  theme_void() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5)) +
+  ggtitle("Fate of Potential Plots Across the Sample Design") 
+
+```
+
+```{r}
+titanic_long <- to_lodes_form(data.frame(Titanic),
+                              key = "Demographic", value = "Group", id = "Cohort",
+                              axes = 1:3)
+
+?to_lodes_form
+# plot with all strata colored
+ggplot(data = titanic_long,
+       aes(x = Demographic, stratum = Group, alluvium = Cohort, y = Freq)) +
+  geom_alluvium(aes(fill=Group)) +
+  geom_stratum(aes(fill=Group)) +
+  geom_text(stat = "stratum", aes(label = Group)) +
+  theme_minimal() +
+  ggtitle("passengers on the maiden voyage of the Titanic", "stratified by demographics and survival")
+#> Warning in f(...): Some di
+```
 

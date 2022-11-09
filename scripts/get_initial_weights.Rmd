@@ -162,7 +162,8 @@ Full_newWghts %>%
                col.names = c('Stratum', 'Inference Prop.', 'Area (acres)', 'Area to Infer', 'Plot Wt.', 'Sampled', 'Rejected'),
                align = c("c", rep('r', times = (ncol(.) - 1))))
 
-rm(OriginalWeights)
+# write.csv() ??
+rm(OriginalWeights, Full_newWghts)
 ```
 
 
@@ -211,7 +212,7 @@ raster_cells <- extract(strat_raster, wsaSpat) %>%
   group_by(ID, BPS_CODE) %>% 
   count() %>% 
   ungroup(BPS_CODE) %>% 
-  mutate(PropArea = n/sum(n))  %>% # seems off. 
+  mutate(PropArea = n/sum(n))  %>% 
   left_join(., lookup_table, by = c('BPS_CODE' = 'RasterValue'))
 
 rm(wsaSpat, TotalFocalArea)
@@ -256,13 +257,27 @@ wsAcec_OriginalWeights <- left_join(wsAcec_area_summary, wsAcec_pt_draw,
 
 wsAcec_OriginalWeights <- drop_na(wsAcec_OriginalWeights)
 
-plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
+
+wsAcec_OriginalWeights %>% 
+  mutate(PropArea = round(PropArea, 3)) %>% 
+  mutate(across(.cols = c(Acres, ApproxStWgt),  round)) %>% 
+  arrange(-Acres) %>% 
+  ungroup() %>% 
+  select(Stratum, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
+  knitr::kable(., digits = 2, format.args = list(big.mark = ","), 
+               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 'Prop. Site', 'No. Sites', 'Plot Wt.'), 
+               align = c("c", rep('r', times = (ncol(.) - 1)))) 
 
 
-rm(raster_cells, wsaSpat, wsAcec)
+rm(raster_cells, wsaSpat, wsAcec, wsAcec_area_summary, wsAcec_pt_draw,
+   base_wsAcec_pts, raster_cells, wsAcec_areas, wsAcec_pts, design_rast)
 ```
 
 
+```{r}
+plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
+rm(wsAcec_OriginalWeights)
+```
 
 
 
@@ -275,14 +290,72 @@ rm(raster_cells, wsaSpat, wsAcec)
 ```{r Point weights for the National Monument writeups}
 
 monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly.shp'), 
-                 quiet = T) %>%  st_intersection(uFO, .) %>% 
+                 quiet = T) %>% 
+  st_intersection(uFO, .) %>% 
   group_by(NLCS_NAME) %>% 
   st_collection_extract("POLYGON")  %>%  # there are these funny points
-  summarize(geometry = st_union(geometry)) 
+  summarize(geometry = st_union(geometry)) %>% 
+  mutate(ID = 1:n(), .before = 1)
 
 mnmt_pts <- pts[unlist(st_intersects(monuments, st_transform(pts, st_crs(monuments)))),]
 
+mnmtSpat <- vect(monuments) %>% project(., crs(strat_raster))
+mnmt_areas <- terra::expanse(mnmtSpat, unit = 'ha') * 2.47105 # conversion to acres
+TotalFocalArea <- sum(mnmt_areas)
+mnmt_areas <- bind_cols(ID = 1:2, Total_Area =  mnmt_areas, TotalFocalArea = TotalFocalArea)
 
+raster_cells <- extract(strat_raster, mnmtSpat) %>% 
+  group_by(ID, BPS_CODE) %>% 
+  count() %>% 
+  ungroup(BPS_CODE) %>% 
+  mutate(PropArea = n/sum(n))  %>% 
+  left_join(., lookup_table, by = c('BPS_CODE' = 'RasterValue'))
+
+rm(mnmtSpat, TotalFocalArea)
+
+mnmt_areas <- left_join(mnmt_areas, raster_cells) %>% 
+  mutate(Area = Total_Area * PropArea)  %>% 
+  select(ID,  Total_Area, Code, PropArea, Area, TotalFocalArea)
+
+mnmt_area_summary <- mnmt_areas %>% 
+  ungroup() %>% 
+  group_by(Code) %>% 
+  mutate(TotalArea = sum(Area)) %>% 
+  ungroup() %>% 
+  distinct(Code, .keep_all = T) %>% 
+  select(Stratum = Code, TotalArea, PropArea, TotalFocalArea) %>%
+  mutate(PropArea = TotalArea/sum(TotalArea)) %>% 
+  st_drop_geometry()
+
+base_mnmt_pts <- mnmt_pts %>% 
+  filter(str_detect(Panel, 'OverSample', negate = T))
+
+# need to calculate the desired sites per stratum as function of plot weight. 
+mnmt_area_summary <- mnmt_area_summary %>% 
+  left_join(., deSS, by = 'Stratum') %>%  # desired ss total_area / wsAcec
+  mutate(DesiredSS = round(DesiredSS * (nrow(base_mmt_pts)/255))) %>% 
+  drop_na()
+
+mnmt_pt_draw <- mnmt_pts %>% 
+  group_by(stratum, Plot.Status) %>% 
+  count() %>% 
+  st_drop_geometry() %>% 
+  pivot_wider(id_cols = stratum, names_from = Plot.Status, values_from = n, 
+              values_fill = 0) %>% 
+  rowwise() %>% 
+  mutate(total = sum(across(not_sampled:sampled)), .before = 'not_sampled')
+
+mmt_OriginalWeights <- left_join(mmt_area_summary, mmt_pt_draw,
+                                    by = c('Stratum' = 'stratum')) %>% 
+  select(Stratum, Total = total, NotSampled = not_sampled, Rejected = rejected, 
+         Sampled = sampled, DesiredSS, PropArea, PropTarget, Acres =  TotalArea) %>% 
+  mutate(ApproxStWgt =  if_else(DesiredSS >= 5, (Acres/DesiredSS) * 5, (DesiredSS/5) * Acres))
+
+mmt_OriginalWeights <- drop_na(mmt_OriginalWeights)
+
+
+
+# rm(uFo, strat_raster, p2d, lookup_table)
 ```
 
 

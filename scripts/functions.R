@@ -56,7 +56,7 @@ plotWeigher <- function(x, pts){
   
   newWghts <- left_join(newWghts, newWghts1) %>% 
     left_join(., x %>% 
-                select(TotalAcres = Acres, Rejected) ) %>% 
+                select(TotalAcres = Acres, Rejected, Stratum) ) %>% 
     arrange(-Weight) %>%  # this works to catch any
     group_by(Stratum) %>% # values which may be introduced
     slice_head(n = 1) %>%  # by an empty second data.frame

@@ -69,3 +69,71 @@ plotWeigher <- function(x, pts){
   return(newWghts)
   
 }
+
+
+
+originalWeights <- function(sample_area, strat_raster, pt_data){
+  
+  focal_pts <- pts[unlist(st_intersects(sample_area, st_transform(pt_data, st_crs(sample_area)))),]
+  
+  # identify the cover of each stratum in the focal area
+  areaSpat <- vect(sample_area) 
+  focal_areas <- terra::expanse(areaSpat, unit = 'ha') * 2.47105 # conversion to acres
+  TotalFocalArea <- sum(focal_areas)
+  focal_areas <- bind_cols(sample_area, Total_Area =  focal_areas, TotalFocalArea = TotalFocalArea)
+  
+  areaSpat <- project(areaSpat, crs(strat_raster))
+  
+  raster_cells <- extract(strat_raster, areaSpat) %>% 
+    group_by(ID, BPS_CODE) %>% 
+    count() %>% 
+    ungroup(BPS_CODE) %>% 
+    mutate(PropArea = n/sum(n))  %>% 
+    left_join(., lookup_table, by = c('BPS_CODE' = 'RasterValue'))
+  
+  rm(wsaSpat, TotalFocalArea)
+  
+  focal_areas <- left_join(focal_areas, raster_cells) %>% 
+    mutate(Area = Total_Area * PropArea)  %>% 
+    select(ID, NAME, TYPE, Total_Area, Code, PropArea, Area, TotalFocalArea)
+  
+  area_summary <- focal_areas %>% 
+    ungroup() %>% 
+    group_by(Code) %>% 
+    mutate(TotalArea = sum(Area)) %>% 
+    ungroup() %>% 
+    distinct(Code, .keep_all = T) %>% 
+    select(Stratum = Code, TotalArea, PropArea, TotalFocalArea) %>%
+    mutate(PropArea = TotalArea/sum(TotalArea)) %>% 
+    st_drop_geometry()
+  
+  base_target_pts <- focal_pts %>% 
+    filter(str_detect(Panel, 'OverSample', negate = T))
+  
+  # need to calculate the desired sites per stratum as function of plot weight. 
+  area_summary <- area_summary %>% 
+    left_join(., deSS, by = 'Stratum') %>%  # desired ss total_area 
+    mutate(DesiredSS = round(DesiredSS * (nrow(base_target_pts)/255))) %>% 
+    drop_na()
+  
+  pt_draw <- focal_pts %>% 
+    group_by(stratum, Plot.Status) %>% 
+    count() %>% 
+    st_drop_geometry() %>% 
+    pivot_wider(id_cols = stratum, names_from = Plot.Status, values_from = n, 
+                values_fill = 0) %>% 
+    rowwise() %>% 
+    mutate(total = sum(across(not_sampled:sampled)), .before = 'not_sampled')
+  
+  OriginalWeights <- left_join(area_summary, pt_draw,
+                                      by = c('Stratum' = 'stratum')) %>% 
+    select(Stratum, Total = total, NotSampled = not_sampled, Rejected = rejected, 
+           Sampled = sampled, DesiredSS, PropArea, PropTarget, Acres =  TotalArea) %>% 
+    mutate(ApproxStWgt =  if_else(DesiredSS >= 5, (Acres/DesiredSS) * 5, (DesiredSS/5) * Acres))
+  
+#  OriginalWeights <- drop_na(OriginalWeights)
+  
+  obs <- list(focal_pts, OriginalWeights)
+  return(obs)
+  
+}

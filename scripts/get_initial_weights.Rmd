@@ -67,6 +67,7 @@ library(tidyverse)
 library(sf)
 library(terra)
 library(spsurvey)
+library(ggalluvial)
 source('functions.R')
 ```
 
@@ -223,66 +224,11 @@ wsAcec <- bind_rows(acecs, wsa) %>%
 
 rm(acecs, wsa)
 
-# identify all points which fell in the focal areas
-wsAcec_pts <- pts[unlist(st_intersects(wsAcec, st_transform(pts, st_crs(wsAcec)))),]
-
-# identify the cover of each stratum in the focal area
-wsaSpat <- vect(wsAcec) 
-wsAcec_areas <- terra::expanse(wsaSpat, unit = 'ha') * 2.47105 # conversion to acres
-TotalFocalArea <- sum(wsAcec_areas)
-wsAcec_areas <- bind_cols(wsAcec, Total_Area =  wsAcec_areas, TotalFocalArea = TotalFocalArea)
-
 strat_raster <- terra::rast(file.path(design_rast, 'UFO_Strata_reclass_30m.tif'))
-wsaSpat <- project(wsaSpat, crs(strat_raster))
 
-raster_cells <- extract(strat_raster, wsaSpat) %>% 
-  group_by(ID, BPS_CODE) %>% 
-  count() %>% 
-  ungroup(BPS_CODE) %>% 
-  mutate(PropArea = n/sum(n))  %>% 
-  left_join(., lookup_table, by = c('BPS_CODE' = 'RasterValue'))
-
-rm(wsaSpat, TotalFocalArea)
-
-wsAcec_areas <- left_join(wsAcec_areas, raster_cells) %>% 
-  mutate(Area = Total_Area * PropArea)  %>% 
-  select(ID, NAME, TYPE, Total_Area, Code, PropArea, Area, TotalFocalArea)
-
-wsAcec_area_summary <- wsAcec_areas %>% 
-  ungroup() %>% 
-  group_by(Code) %>% 
-  mutate(TotalArea = sum(Area)) %>% 
-  ungroup() %>% 
-  distinct(Code, .keep_all = T) %>% 
-  select(Stratum = Code, TotalArea, PropArea, TotalFocalArea) %>%
-  mutate(PropArea = TotalArea/sum(TotalArea)) %>% 
-  st_drop_geometry()
-
-base_wsAcec_pts <- wsAcec_pts %>% 
-  filter(str_detect(Panel, 'OverSample', negate = T))
-
-# need to calculate the desired sites per stratum as function of plot weight. 
-wsAcec_area_summary <- wsAcec_area_summary %>% 
-  left_join(., deSS, by = 'Stratum') %>%  # desired ss total_area / wsAcec
-  mutate(DesiredSS = round(DesiredSS * (nrow(base_wsAcec_pts)/255))) %>% 
-  drop_na()
-
-wsAcec_pt_draw <- wsAcec_pts %>% 
-  group_by(stratum, Plot.Status) %>% 
-  count() %>% 
-  st_drop_geometry() %>% 
-  pivot_wider(id_cols = stratum, names_from = Plot.Status, values_from = n, 
-              values_fill = 0) %>% 
-  rowwise() %>% 
-  mutate(total = sum(across(not_sampled:sampled)), .before = 'not_sampled')
-
-wsAcec_OriginalWeights <- left_join(wsAcec_area_summary, wsAcec_pt_draw,
-                                    by = c('Stratum' = 'stratum')) %>% 
-  select(Stratum, Total = total, NotSampled = not_sampled, Rejected = rejected, 
-         Sampled = sampled, DesiredSS, PropArea, PropTarget, Acres =  TotalArea) %>% 
-  mutate(ApproxStWgt =  if_else(DesiredSS >= 5, (Acres/DesiredSS) * 5, (DesiredSS/5) * Acres))
-
-wsAcec_OriginalWeights <- drop_na(wsAcec_OriginalWeights)
+wsAcec_OriginalWeights <- originalWeights(sample_area = wsAcec, strat_raster = strat_raster, pt_data = pts)
+wsAcec_pts <- wsAcec_OriginalWeights[[1]] # we return a list with the points needed for recalculating the weights
+wsAcec_OriginalWeights <- wsAcec_OriginalWeights[[2]]
 
 
 wsAcec_OriginalWeights %>% 
@@ -292,16 +238,16 @@ wsAcec_OriginalWeights %>%
   ungroup() %>% 
   select(Stratum, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), 
-               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 'Prop. Site', 'No. Sites', 'Plot Wt.'), 
+               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 
+                             'Prop. Site', 'No. Sites', 'Plot Wt.'), 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
-
 
 rm(raster_cells, wsaSpat, wsAcec, wsAcec_area_summary, wsAcec_pt_draw,
    base_wsAcec_pts, raster_cells, wsAcec_areas, design_rast)
 ```
 
 
-Strata with five or more plots, would allow for temporal analyses to  be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
+Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
 
 ```{r}
 plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
@@ -309,14 +255,7 @@ rm(wsAcec_OriginalWeights, wsAcec_pts)
 ```
 
 
-
-
-
-
-
-
-
-```{r Point weights for the National Monument writeups}
+```{r Point weights for Dominguez-Escalente National Monument writeups}
 
 monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly.shp'), 
                  quiet = T) %>% 
@@ -383,7 +322,17 @@ mnmt_OriginalWeights <- left_join(mnmt_area_summary, mnmt_pt_draw,
   mutate(ApproxStWgt =  if_else(DesiredSS >= 5, (Acres/DesiredSS) * 5, (DesiredSS/5) * Acres))
 
 mnmt_OriginalWeights <- drop_na(mnmt_OriginalWeights)
-mnmt_OriginalWeights
+
+mnmt_OriginalWeights %>% 
+  mutate(PropArea = round(PropArea, 3)) %>% 
+  mutate(across(.cols = c(Acres, ApproxStWgt),  round)) %>% 
+  arrange(-Acres) %>% 
+  ungroup() %>% 
+  select(Stratum, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
+  knitr::kable(., digits = 2, format.args = list(big.mark = ","), 
+               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 
+                             'Prop. Site', 'No. Sites', 'Plot Wt.'), 
+               align = c("c", rep('r', times = (ncol(.) - 1)))) 
 
 rm(uFO, strat_raster, p2d, lookup_table, mnmt_ptp_draw, mnmt_area_summary, 
    base_mnmt_pts, mnmt_areas, mnmtSpat, raster_cells, deSS, mnmt_pt_draw)
@@ -399,7 +348,7 @@ plotWeigher(mnmt_OriginalWeights, mnmt_pts)
 Under the master sample design the number of plots which could be inferred from in the Salt Desert stratum would be 17. However, due to an intensification a surplus of 5, plots were sampled, however as these plots exceed the number of ... Weird problem. 
 
 
-```{r}
+```{r Alluvial tracking plot status, warning = F, fig.height = 4, fig.weight = 4, fig.cap = 'Fates of all potential AIM plots from the Sample Design'}
 
 ps <- plot_status %>% 
   filter(str_detect(Panel, 'OverSample', negate = T)) %>% 
@@ -423,22 +372,5 @@ ggplot(data = ps,
         plot.title = element_text(hjust = 0.5)) +
   ggtitle("Fate of Potential Plots Across the Sample Design") 
 
+rm(ps)
 ```
-
-```{r}
-titanic_long <- to_lodes_form(data.frame(Titanic),
-                              key = "Demographic", value = "Group", id = "Cohort",
-                              axes = 1:3)
-
-?to_lodes_form
-# plot with all strata colored
-ggplot(data = titanic_long,
-       aes(x = Demographic, stratum = Group, alluvium = Cohort, y = Freq)) +
-  geom_alluvium(aes(fill=Group)) +
-  geom_stratum(aes(fill=Group)) +
-  geom_text(stat = "stratum", aes(label = Group)) +
-  theme_minimal() +
-  ggtitle("passengers on the maiden voyage of the Titanic", "stratified by demographics and survival")
-#> Warning in f(...): Some di
-```
-

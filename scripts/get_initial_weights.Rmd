@@ -1,5 +1,5 @@
 ---
-title: "Point Weights"
+title: "Plot Weights & Locations"
 author: "steppe"
 output:
   word_document: default
@@ -15,7 +15,7 @@ The location of the random plots for AIM are generated via computer and a number
 
 #### the design may be represented in simple mathematical terms
 
-Using an example from a stratum which is of high land management importance, sagebrush-steppe, we illustrate the site selection process. While the aerial extent of sagebrush-steppe in the target frame is roughly one quarter (0.246), the stratum makes up one third (0.33) of all sites.
+Using an example from a stratum which is of high land management importance, sagebrush-steppe, we illustrate the site selection process. While the aerial extent of sagebrush-steppe in the target frame is roughly one quarter (0.246), the stratum makes up one third (0.33) of all plots
 
 In order to convey the number of plots drawn in any stratum the following equation is representative. 
 
@@ -40,9 +40,10 @@ The **weight** of a plot is the amount of acres it represents within a stratum, 
 $$
 W_{i} = \dfrac{Stratum_{area}}{n}
 $$
+
 + ${W_{i}}$ the weight acres, *i.e. the area which a plot represents within the target frame*
-+ ${Stratum_{area}$ the total area of the stratum in the area of analysis *e.g. 214,023 acres of sage-steppe*
-+ ${n}$ the total number of plots in a stratumm *e.g. for a panel of sage steppe 16*
++ ${Stratum_{area}}$ the total area of the stratum in the area of analysis *e.g. 214,023 acres of sage-steppe*
++ ${n}$ the total number of plots in a stratum *e.g. for a panel of sage steppe 16*
 
 Each sagebrush-steppe plot will have a weight of
 
@@ -169,9 +170,11 @@ OriginalWeights %>%
   mutate(across(.cols = c(Acres, ApproxStWgt),  round)) %>% 
   arrange(-Acres) %>% 
   ungroup() %>% 
-  select(StratumName, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
+  select(Stratum, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), 
-               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 'Prop. Site', 'No. Sites', 'Plot Wt.'), 
+               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area',
+                             'Prop. Site', 'No. Plots', 'Plot Wt.'),
+               caption = "Original Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
   
 rm(r, plot_summary)
@@ -185,31 +188,29 @@ Full_newWghts %>%
   mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
   arrange(-TotalAcres) %>% 
-  select(Stratum, PropInference, TotalAcres:WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  select(Stratum, PropInference, AreaInference:WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","),
-               col.names = c('Stratum', 'Inference Prop.', 'Area (acres)', 
-                             'Area to Infer', 'Plot Wt.', 'Sampled', 'Rejected'),
+               col.names = c('Stratum', 'Inf. Prop.', 
+                             'Area Inf.', 'Plot Wt.', 'Sampled', 'Rejected'),
+               caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1))))
 
-# write.csv() ??
 rm(OriginalWeights, Full_newWghts)
 ```
 
+\newpage
 
-The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. These areas are intended to have " ... greater than 80 percent vegetation communities  ... ". These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of sites in the region. As our sample design was initiated and completed during a period of drought (See...), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
+The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. These areas are intended to have " ... greater than 80 percent vegetation communities  ... ". These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of plots in the region. As our sample design was initiated and completed during a period of drought (See...), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
 
 
-
-```{r Point weights for ACEC and WSA}
+```{r Original Point weights for ACEC and WSA}
 
 spatial_products <- '/media/sagesteppe/ExternalHD/UFO_cartography'
 design_rast <- '/media/sagesteppe/ExternalHD/UFO_AIM_Design_Stratification/processed'
 lookup_table <- read.csv(file.path(design_rast, 'UFO_strata_areas.csv')) %>% 
   select(RasterValue, Code)
 
-
 strat_raster <- terra::rast(file.path(design_rast, 'UFO_Strata_reclass_30m.tif'))
-
 uFO <- st_read(file.path(spatial_products, 
                          'BLM_CO_Grazing_Allotments/gra_allot_poly.shp'), quiet = T)
 acecs <- st_read(file.path(spatial_products, 'BLM_CO_ACEC/acec_desig_poly.shp'), 
@@ -228,11 +229,9 @@ wsAcec <- bind_rows(acecs, wsa) %>%
 
 rm(acecs, wsa)
 
-
 wsAcec_OriginalWeights <- originalWeights(sample_area = wsAcec, strat_raster = strat_raster, pt_data = pts)
 wsAcec_pts <- wsAcec_OriginalWeights[[1]] # we return a list with the points needed for recalculating the weights
 wsAcec_OriginalWeights <- wsAcec_OriginalWeights[[2]]
-
 
 wsAcec_OriginalWeights %>% 
   mutate(PropArea = round(PropArea, 3)) %>% 
@@ -242,23 +241,38 @@ wsAcec_OriginalWeights %>%
   select(Stratum, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), 
                col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 
-                             'Prop. Site', 'No. Sites', 'Plot Wt.'), 
+                             'Prop. Site', 'No. Plots', 'Plot Wt.'),
+               caption = "Original Sample Design for Areas of Critical Environmental Concern
+               & Wilderness Study Areas", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
 
 rm(raster_cells, wsaSpat, wsAcec, wsAcec_area_summary, wsAcec_pt_draw,
    base_wsAcec_pts, raster_cells, wsAcec_areas, design_rast)
 ```
 
-
 Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
 
-```{r}
-plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
+```{r Final Point weights for ACEC and WSA}
+wsAcec_newWghts <- plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
+
+wsAcec_newWghts %>% 
+  mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
+  mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
+  arrange(-TotalAcres) %>% 
+  select(Stratum, PropInference, AreaInference:WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  knitr::kable(., digits = 2, format.args = list(big.mark = ","),
+               col.names = c('Stratum', 'Inf. Prop.',  
+                             'Area Inf.', 'Plot Wt.', 'Sampled', 'Rejected'),
+                             caption = "Realized Sample Design for Areas of Critical Environmental Concern
+               & Wilderness Study Areas",               
+               align = c("c", rep('r', times = (ncol(.) - 1))))
+
 rm(wsAcec_OriginalWeights, wsAcec_pts)
 ```
 
+\newpage
 
-```{r Point weights for Dominguez-Escalente National Monument writeups}
+```{r Original Point weights for Dominguez-Escalente NM}
 
 monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly.shp'), 
                  quiet = T) %>% 
@@ -266,70 +280,16 @@ monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly
   group_by(NLCS_NAME) %>% 
   st_collection_extract("POLYGON")  %>%  # there are these funny points
   summarize(geometry = st_union(geometry)) %>% 
-  mutate(ID = 1:n(), .before = 1)
+  rename(NAME = NLCS_NAME)
 
+DEnm <- monuments %>% filter(str_detect(NAME, 'Dominguez')) %>% 
+  mutate(ID = 1:n(), .before = 1, TYPE = 'NM')
 
-OW_deNM <- OriginalWeights(DEnm , strat_raster, pts)
+OW_deNM <- originalWeights(DEnm, strat_raster, pts)
+OW_deNM_pts <- OW_deNM[[1]]
+OW_deNM <- OW_deNM[[2]]
 
-mnmt_pts <- pts[unlist(st_intersects(monuments, 
-                                     st_transform(pts, st_crs(monuments)))),]
-mnmtSpat <- vect(monuments) %>% project(., crs(strat_raster))
-mnmt_areas <- terra::expanse(mnmtSpat, unit = 'ha') * 2.47105 # conversion to acres
-TotalFocalArea <- sum(mnmt_areas)
-mnmt_areas <- bind_cols(ID = 1:2, Total_Area =  mnmt_areas, 
-                        TotalFocalArea = TotalFocalArea)
-
-raster_cells <- extract(strat_raster, mnmtSpat) %>% 
-  group_by(ID, BPS_CODE) %>% 
-  count() %>% 
-  ungroup(BPS_CODE) %>% 
-  mutate(PropArea = n/sum(n))  %>% 
-  left_join(., lookup_table, by = c('BPS_CODE' = 'RasterValue'))
-
-rm(mnmtSpat, TotalFocalArea)
-
-mnmt_areas <- left_join(mnmt_areas, raster_cells) %>% 
-  mutate(Area = Total_Area * PropArea)  %>% 
-  select(ID,  Total_Area, Code, PropArea, Area, TotalFocalArea)
-
-mnmt_area_summary <- mnmt_areas %>% 
-  ungroup() %>% 
-  group_by(Code) %>% 
-  mutate(TotalArea = sum(Area)) %>% 
-  ungroup() %>% 
-  distinct(Code, .keep_all = T) %>% 
-  select(Stratum = Code, TotalArea, PropArea, TotalFocalArea) %>%
-  mutate(PropArea = TotalArea/sum(TotalArea)) %>% 
-  st_drop_geometry()
-
-base_mnmt_pts <- mnmt_pts %>% 
-  filter(str_detect(Panel, 'OverSample', negate = T))
-
-# need to calculate the desired sites per stratum as function of plot weight. 
-mnmt_area_summary <- mnmt_area_summary %>% 
-  left_join(., deSS, by = 'Stratum') %>%  # desired ss total_area / wsAcec
-  mutate(DesiredSS = round(DesiredSS * (nrow(base_mnmt_pts)/255))) %>% 
-  drop_na()
-
-mnmt_pt_draw <- mnmt_pts %>% 
-  group_by(stratum, Plot.Status) %>% 
-  count() %>% 
-  st_drop_geometry() %>% 
-  pivot_wider(id_cols = stratum, names_from = Plot.Status, values_from = n, 
-              values_fill = 0) %>% 
-  rowwise() %>% 
-  mutate(total = sum(across(not_sampled:sampled)), .before = 'not_sampled')
-
-mnmt_OriginalWeights <- left_join(mnmt_area_summary, mnmt_pt_draw,
-                                    by = c('Stratum' = 'stratum')) %>% 
-  select(Stratum, Total = total, NotSampled = not_sampled, Rejected = rejected, 
-         Sampled = sampled, DesiredSS, PropArea, PropTarget, Acres =  TotalArea) %>% 
-  mutate(across(.cols = Total:Sampled, ~replace_na(.x, 0))) %>% 
-  mutate(ApproxStWgt =  if_else(DesiredSS >= 5, (Acres/DesiredSS) * 5, (DesiredSS/5) * Acres))
-
-mnmt_OriginalWeights <- drop_na(mnmt_OriginalWeights)
-
-mnmt_OriginalWeights %>% 
+OW_deNM %>% 
   mutate(PropArea = round(PropArea, 3)) %>% 
   mutate(across(.cols = c(Acres, ApproxStWgt),  round)) %>% 
   arrange(-Acres) %>% 
@@ -337,26 +297,78 @@ mnmt_OriginalWeights %>%
   select(Stratum, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), 
                col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 
-                             'Prop. Site', 'No. Sites', 'Plot Wt.'), 
+                             'Prop. Site', 'No. Plots', 'Plot Wt.'),
+               caption = "Original Sample Design for Dominguez-Escalante National Monument", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
 
-rm(uFO, strat_raster, p2d, lookup_table, mnmt_ptp_draw, mnmt_area_summary, 
-   base_mnmt_pts, mnmt_areas, mnmtSpat, raster_cells, deSS, mnmt_pt_draw)
+rm(uFO, p2d, DEnm)
 ```
 
 Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
 
-```{r}
-plotWeigher(mnmt_OriginalWeights, mnmt_pts)
+```{r Final Point Weights for Dominguez-Escalente NCA}
+
+OW_newWghts <- plotWeigher(OW_deNM, OW_deNM_pts)
+OW_newWghts %>% 
+  mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
+  mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
+  arrange(-TotalAcres) %>% 
+  select(Stratum, PropInference, AreaInference:WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  knitr::kable(., digits = 2, format.args = list(big.mark = ","),
+               col.names = c('Stratum', 'Inf. Prop.', 
+                             'Area Inf.', 'Plot Wt.', 'Sampled', 'Rejected'),
+               caption = "Realized Sample Design for Dominguez-Escalante National Monument", 
+               align = c("c", rep('r', times = (ncol(.) - 1))))
+
+rm(OW_deNM, OW_deNM_pts)
 ```
+
+\newpage
 
 Under the master sample design the number of plots which could be inferred from in the Salt Desert stratum would be 17. However, due to an intensification a surplus of 5, plots were sampled, however as these plots exceed the number of ... Weird problem. 
 
-```{r Point Weights for Gunnison Gorge NCA}
+```{r Original Point Weights for Gunnison Gorge NCA}
 
+GGnm <- monuments %>% filter(str_detect(NAME, 'Gunnison')) %>% 
+  mutate(ID = 1:n(), .before = 1, TYPE = 'NM')
+  
+GG_deNM <- originalWeights(GGnm, strat_raster, pts)
+GG_deNM_pts <- GG_deNM[[1]]
+GG_deNM <- GG_deNM[[2]]
 
+GG_deNM %>% 
+  mutate(PropArea = round(PropArea, 3)) %>% 
+  mutate(across(.cols = c(Acres, ApproxStWgt),  round)) %>% 
+  arrange(-Acres) %>% 
+  ungroup() %>% 
+  select(Stratum, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
+  knitr::kable(., digits = 2, format.args = list(big.mark = ","), 
+               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 
+                             'Prop. Site', 'No. Plots', 'Plot Wt.'),
+               caption = "Original Sample Design for Dominguez-Escalante National Monument", 
+               align = c("c", rep('r', times = (ncol(.) - 1)))) 
+
+rm(deSS, lookup_table, monuments, strat_raster, GGnm)
 ```
 
+```{r Final Points Weights for Gunnison Gorge NCA}
+
+GG_newWghts <- plotWeigher(GG_deNM, GG_deNM_pts)
+GG_newWghts %>% 
+  mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
+  mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
+  arrange(-TotalAcres) %>% 
+  select(Stratum, PropInference, AreaInference:WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  knitr::kable(., digits = 2, format.args = list(big.mark = ","),
+               col.names = c('Stratum', 'Inf. Prop.', 
+                             'Area Inf.', 'Plot Wt.', 'Sampled', 'Rejected'),
+               caption = "Realized Sample Design for Gunnison Gorge National Monument", 
+               align = c("c", rep('r', times = (ncol(.) - 1))))
+
+rm(GG_deNM, GG_deNM_pts, pts)
+```
+
+\newpage
 
 ```{r Alluvial tracking plot status, warning = F, fig.height = 4, fig.weight = 4, fig.cap = 'Fates of all potential AIM plots from the Sample Design'}
 
@@ -374,8 +386,8 @@ ps <- plot_status %>%
 ggplot(data = ps,
        aes(axis1 = stratum, axis2 = Plot.Status, y = n), color = NA) +
   geom_alluvium(aes(fill = Plot.Status), curve_type = "arctangent", width = 0.25) +
-  geom_stratum(color = 'grey75') +
-  geom_text(stat = "stratum", aes(label = after_stat(stratum)), color = 'grey25') +
+  geom_stratum(color = 'grey85') +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)), color = 'grey15') +
   scale_fill_manual(values = c('forestgreen', '#e71313')) +
   theme_void() +
   theme(legend.position = "none",
@@ -384,3 +396,8 @@ ggplot(data = ps,
 
 rm(ps)
 ```
+
+```{r}
+
+```
+

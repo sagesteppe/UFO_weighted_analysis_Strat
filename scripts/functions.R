@@ -19,7 +19,8 @@ originalWeights <- function(sample_area, strat_raster, pt_data){
   areaSpat <- vect(sample_area) 
   focal_areas <- terra::expanse(areaSpat, unit = 'ha') * 2.47105 # conversion to acres
   TotalFocalArea <- sum(focal_areas)
-  focal_areas <- bind_cols(sample_area, Total_Area =  focal_areas, TotalFocalArea = TotalFocalArea)
+  focal_areas <- bind_cols(sample_area, Total_Area =  focal_areas, 
+                           TotalFocalArea = TotalFocalArea)
   
   areaSpat <- project(areaSpat, crs(strat_raster))
   
@@ -34,7 +35,8 @@ originalWeights <- function(sample_area, strat_raster, pt_data){
   
   focal_areas <- left_join(focal_areas, raster_cells) %>% 
     mutate(Area = Total_Area * PropArea)  %>% 
-    select(any_of(c('ID', 'NAME', 'TYPE', 'Total_Area', 'Code', 'PropArea', 'Area', 'TotalFocalArea')))
+    select(ID, NAME, TYPE, Total_Area, Code, 
+           PropArea, Area, TotalFocalArea)
   
   area_summary <- focal_areas %>% 
     ungroup() %>% 
@@ -66,9 +68,10 @@ originalWeights <- function(sample_area, strat_raster, pt_data){
   
   OriginalWeights <- left_join(area_summary, pt_draw,
                                by = c('Stratum' = 'stratum')) %>% 
-    select(any_of(c(Stratum, Total = total, NotSampled = not_sampled, Rejected = rejected, 
-           Sampled = sampled, DesiredSS, PropArea, PropTarget, Acres =  TotalArea))) %>% 
-    mutate(ApproxStWgt =  if_else(DesiredSS >= 5, (Acres/DesiredSS) * 5, (DesiredSS/5) * Acres))
+    select(Stratum, Total = total, NotSampled = not_sampled, Rejected = rejected, 
+           Sampled = sampled, DesiredSS, PropArea, PropTarget, Acres =  TotalArea) %>% 
+    mutate(ApproxStWgt =  if_else(DesiredSS >= 5, (Acres/DesiredSS) * 5, (DesiredSS/5) * Acres)) %>% 
+    mutate(across(where(is.numeric), ~ replace_na(.x, 0)))
   
   obs <- list(focal_pts, OriginalWeights)
   return(obs)

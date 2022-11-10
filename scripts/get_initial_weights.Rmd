@@ -187,7 +187,8 @@ Full_newWghts %>%
   arrange(-TotalAcres) %>% 
   select(Stratum, PropInference, TotalAcres:WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","),
-               col.names = c('Stratum', 'Inference Prop.', 'Area (acres)', 'Area to Infer', 'Plot Wt.', 'Sampled', 'Rejected'),
+               col.names = c('Stratum', 'Inference Prop.', 'Area (acres)', 
+                             'Area to Infer', 'Plot Wt.', 'Sampled', 'Rejected'),
                align = c("c", rep('r', times = (ncol(.) - 1))))
 
 # write.csv() ??
@@ -205,6 +206,9 @@ spatial_products <- '/media/sagesteppe/ExternalHD/UFO_cartography'
 design_rast <- '/media/sagesteppe/ExternalHD/UFO_AIM_Design_Stratification/processed'
 lookup_table <- read.csv(file.path(design_rast, 'UFO_strata_areas.csv')) %>% 
   select(RasterValue, Code)
+
+
+strat_raster <- terra::rast(file.path(design_rast, 'UFO_Strata_reclass_30m.tif'))
 
 uFO <- st_read(file.path(spatial_products, 
                          'BLM_CO_Grazing_Allotments/gra_allot_poly.shp'), quiet = T)
@@ -224,7 +228,6 @@ wsAcec <- bind_rows(acecs, wsa) %>%
 
 rm(acecs, wsa)
 
-strat_raster <- terra::rast(file.path(design_rast, 'UFO_Strata_reclass_30m.tif'))
 
 wsAcec_OriginalWeights <- originalWeights(sample_area = wsAcec, strat_raster = strat_raster, pt_data = pts)
 wsAcec_pts <- wsAcec_OriginalWeights[[1]] # we return a list with the points needed for recalculating the weights
@@ -264,6 +267,9 @@ monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly
   st_collection_extract("POLYGON")  %>%  # there are these funny points
   summarize(geometry = st_union(geometry)) %>% 
   mutate(ID = 1:n(), .before = 1)
+
+
+OW_deNM <- OriginalWeights(DEnm , strat_raster, pts)
 
 mnmt_pts <- pts[unlist(st_intersects(monuments, 
                                      st_transform(pts, st_crs(monuments)))),]
@@ -338,14 +344,18 @@ rm(uFO, strat_raster, p2d, lookup_table, mnmt_ptp_draw, mnmt_area_summary,
    base_mnmt_pts, mnmt_areas, mnmtSpat, raster_cells, deSS, mnmt_pt_draw)
 ```
 
-
-Strata with five or more plots, would allow for temporal analyses to  be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
+Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
 
 ```{r}
 plotWeigher(mnmt_OriginalWeights, mnmt_pts)
 ```
 
 Under the master sample design the number of plots which could be inferred from in the Salt Desert stratum would be 17. However, due to an intensification a surplus of 5, plots were sampled, however as these plots exceed the number of ... Weird problem. 
+
+```{r Point Weights for Gunnison Gorge NCA}
+
+
+```
 
 
 ```{r Alluvial tracking plot status, warning = F, fig.height = 4, fig.weight = 4, fig.cap = 'Fates of all potential AIM plots from the Sample Design'}

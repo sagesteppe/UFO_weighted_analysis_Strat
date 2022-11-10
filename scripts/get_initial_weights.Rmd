@@ -13,7 +13,7 @@ The initial sample design followed the general AIM implementation design to cont
 
 The location of the random plots for AIM are generated via computer and a number of them may not feasibly be sampled. In general potential plots are most often, anecdotally, rejected for: being located on steep slopes which are dangerous for field crews to sample, requiring access to cross private land to access BLM which landowners deny. The inability of these plots to be sampled reduces the spatial extent of the strata which we may use statistics to infer across, and increases the measures of uncertainty associated with these areas. In this section we review the original sample design, derive original sample weights for sub-units of the field office, and calculate the weights for each of these units after the sample design has been completed. 
 
-#### the design may be represented in simple mathematical terms
+### the design may be represented in simple mathematical terms
 
 Using an example from a stratum which is of high land management importance, sagebrush-steppe, we illustrate the site selection process. While the aerial extent of sagebrush-steppe in the target frame is roughly one quarter (0.246), the stratum makes up one third (0.33) of all plots
 
@@ -52,7 +52,7 @@ $$
 $$
 acres per plot, which it represents. 
 
-#### Areas of Analysis
+### Areas of Analysis
 
 The original AIM design covers the entire target frame of the UFO field office. However, a few additional analytical  and management sub-units exist within this extent. Their are two National Monuments - the Gunnison Gorge & Dominguez-Escalente - the latter of which is partially administered by the Grand Junction Field Office (GJFO), which have different management directives which distinguish them from the majority of land in the target frame. Likewise there are numerous Wilderness Study Areas (WSA's), and Area's of critical Environmental Concern (ACEC's), throughout the field office. The UFO intends these areas to have higher proportions of certain metrics relative to the remainder of BLM land. 
 
@@ -197,8 +197,10 @@ Full_newWghts %>%
                caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1))))
 
-OriginalWeights_results <- OriginalWeights
-NewWeights_results <- Full_newWghts
+OriginalWeights_results <- mutate(OriginalWeights, 'Area' = 'SampleFrame') %>% 
+  select(-any_of(c('StratumName')))
+NewWeights_results <- mutate(Full_newWghts, 'Area' = 'SampleFrame') %>% 
+  select(-any_of(c('StratumName')))
 
 rm(OriginalWeights, Full_newWghts)
 ```
@@ -207,6 +209,7 @@ rm(OriginalWeights, Full_newWghts)
 
 \newpage
 
+####  Areas of Critical Environmental Concern (ACEC's) and Wilderness Study Areas (WSA)
 The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. Loosely, they are intended to have a higher percentage of the vegetation communities within the natural range of variation: 
 
 > "*greater than 80 percent of vegetation communities in ACEC's, WSA's...*" 
@@ -277,13 +280,19 @@ wsAcec_newWghts %>%
                & Wilderness Study Areas",               
                align = c("c", rep('r', times = (ncol(.) - 1))))
 
-OriginalWeights_results <- bind_rows(OriginalWeights_results, wsAcec_OriginalWeights)
-NewWeights_results <- bind_rows(NewWeights_results, wsAcec_newWghts)
+OriginalWeights_results <- bind_rows(OriginalWeights_results, wsAcec_OriginalWeights %>% 
+                                       mutate('Area' = 'ACEC-WSA'))
+NewWeights_results <- bind_rows(NewWeights_results, wsAcec_newWghts %>% 
+                                       mutate('Area' = 'ACEC-WSA'))
+points <- pts %>% 
+  mutate('AoInference' = if_else(Plot.ID %in% wsAcec_pts$Plot.ID, 'ACEC-WSA', 'unassigned')) 
 
-rm(wsAcec_OriginalWeights, wsAcec_pts)
+rm(wsAcec_OriginalWeights, wsAcec_pts, wsAcec_newWghts)
 ```
 
 \newpage
+
+#### Dominguez-Escalente National Monument
 
 ```{r Original Point weights for Dominguez-Escalente NM}
 
@@ -314,7 +323,7 @@ OW_deNM %>%
                caption = "Original Sample Design for Dominguez-Escalante National Monument", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
 
-rm(uFO, p2d, DEnm)
+rm(uFO, p2d, DEnm, spatial_products)
 ```
 
 Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
@@ -333,15 +342,21 @@ OW_newWghts %>%
                caption = "Realized Sample Design for Dominguez-Escalante National Monument", 
                align = c("c", rep('r', times = (ncol(.) - 1))))
 
-OriginalWeights_results <- bind_rows(OriginalWeights_results, OW_deNM)
-NewWeights_results <- bind_rows(NewWeights_results, OW_newWghts)
+OriginalWeights_results <- bind_rows(OriginalWeights_results, OW_deNM %>% 
+                                       mutate('Area' = 'DE-NM'))
+NewWeights_results <- bind_rows(NewWeights_results, OW_newWghts %>% 
+                                       mutate('Area' = 'DE-NM'))
+points <- points %>% 
+  mutate(AoInference = if_else(Plot.ID %in% OW_deNM_pts$Plot.ID, 'DE-NM', AoInference))
 
-rm(OW_deNM, OW_deNM_pts)
+rm(OW_deNM, OW_deNM_pts, OW_newWghts)
 ```
 
 \newpage
 
-Under the master sample design the number of plots which could be inferred from in the Salt Desert stratum would be 17. However, due to an intensification a surplus of 5, plots were sampled, however as these plots exceed the number of ... Weird problem. 
+
+#### Gunnison Gorge National Monument
+
 
 ```{r Original Point Weights for Gunnison Gorge NCA}
 
@@ -381,13 +396,38 @@ GG_newWghts %>%
                caption = "Realized Sample Design for Gunnison Gorge National Monument", 
                align = c("c", rep('r', times = (ncol(.) - 1))))
 
-OriginalWeights_results <- bind_rows(OriginalWeights_results, GG_deNM)
-NewWeights_results <- bind_rows(NewWeights_results, GG_newWghts)
+OriginalWeights_results <- bind_rows(OriginalWeights_results, GG_deNM %>% 
+                                       mutate('Area' = 'GG-NM'))
+NewWeights_results <- bind_rows(NewWeights_results, GG_newWghts %>% 
+                                       mutate('Area' = 'GG-NM'))
+points <- points %>% 
+  mutate(AoInference = if_else(Plot.ID %in% GG_deNM_pts$Plot.ID, 'DE-NM', AoInference)) 
 
-rm(GG_deNM, GG_deNM_pts, pts)
+rm(GG_deNM, GG_deNM_pts, pts, GG_newWghts)
+```
+
+```{r write out results, eval = F}
+
+points <- points %>% 
+  mutate(AoInference = if_else(AoInference == 'unassigned', 'SampleFrame', AoInference)) %>% 
+  st_drop_geometry() %>% 
+  select(-any_of(c('psF','geometry','stratum', 'id')))
+
+p <- '../data/processed'
+write.csv(OriginalWeights_results, file.path(p, 'OriginalSampleDesignWeights.csv'), row.names = F)
+write.csv(NewWeights_results, file.path(p, 'FinalSampleDesignWeights.csv'), row.names = F)
+write.csv(points, file.path(p, 'PointsAreaOfInterence.csv'), row.names = F)
+
+rm(OriginalWeights_results, NewWeights_results, points, p)
+```
+
+```{r}
+rm(OriginalWeights_results, NewWeights_results, points, originalWeights, plotWeigher)
 ```
 
 \newpage
+
+### Summary of Plot Sampling Efforts
 
 ```{r Alluvial tracking plot status, warning = F, fig.height = 4, fig.weight = 4, fig.cap = 'Fates of all potential AIM plots from the Sample Design'}
 
@@ -404,7 +444,7 @@ ps <- plot_status %>%
 
 ggplot(data = ps,
        aes(axis1 = stratum, axis2 = Plot.Status, y = n), color = NA) +
-  geom_alluvium(aes(fill = Plot.Status), curve_type = "arctangent", width = 0.25) +
+  geom_alluvium(aes(fill = Plot.Status),  width = 0.25) +
   geom_stratum(color = 'grey85') +
   geom_text(stat = "stratum", aes(label = after_stat(stratum)), color = 'grey15') +
   scale_fill_manual(values = c('forestgreen', '#e71313')) +
@@ -413,10 +453,7 @@ ggplot(data = ps,
         plot.title = element_text(hjust = 0.5)) +
   ggtitle("Fate of Potential Plots Across the Sample Design") 
 
-rm(ps)
+rm(ps, plot_status)
 ```
 
-```{r}
-
-```
 

@@ -54,7 +54,9 @@ acres per plot, which it represents.
 
 #### Areas of Analysis
 
-The original AIM design covers the entire target frame of the UFO field office. However, a few additional analytical  and management sub-units exist within this extent. Their are two National Monuments, the Gunnison Gorge, and Dominguez-Escalente, which is partially administered by the Grand Junction Field Office (GJFO) which have different management directives which distinguish them from the majority of UFO land. Likewise there are numerous Wilderness Study Areas (WSA's), and Area's of critical Environmental Concern (ACEC's), throughout the field office. The UFO intends these areas to have higher proportions of certain metrics relative to the remainder of BLM land. 
+The original AIM design covers the entire target frame of the UFO field office. However, a few additional analytical  and management sub-units exist within this extent. Their are two National Monuments - the Gunnison Gorge & Dominguez-Escalente - the latter of which is partially administered by the Grand Junction Field Office (GJFO), which have different management directives which distinguish them from the majority of land in the target frame. Likewise there are numerous Wilderness Study Areas (WSA's), and Area's of critical Environmental Concern (ACEC's), throughout the field office. The UFO intends these areas to have higher proportions of certain metrics relative to the remainder of BLM land. 
+
+> "*Maximize native vegetation and natural processes by ensuring upland vegetation communities are within the range of natural variability, with an appropriate mix of plant functional groups, cover, and diversity, according to best available science ... over 10 years with 80 percent confidence*" 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F)
@@ -121,6 +123,10 @@ pts <- st_read(
   # some over samples were not completed
   select(Plot.ID = PLOTID, stratum, id, Panel = PANEL, Plot.Status, psF, xcoord, ycoord, geometry)
   
+# st_write(pts, 
+#          '/media/sagesteppe/ExternalHD/UFO_cartography/AIM_plots_outcomes/plots_outcomes.shp',
+#          quiet = T)
+
 plot_status <- pts %>% 
   select(colnames(plot_status)) %>% 
   st_drop_geometry()
@@ -146,7 +152,6 @@ plot_summary <- plot_summary %>%
   rename_with(., ~ str_to_sentence(.))
 
 # DERIVE THE VALUES FOR BOTH TOTAL AREA AND AREAS IN ACRES
-
 r <- read.csv(file.path(p2d, 'UFO_strata_areas.csv')) %>% 
   mutate(ProportionalArea = Cells/sum(Cells)) %>% 
   select(Stratum, Code, ProportionalArea, Acres)
@@ -163,8 +168,6 @@ OriginalWeights <- left_join(plot_summary, r, by = c('Stratum' = 'Code')) %>%
           DesiredSS, PropArea = ProportionalArea, PropTarget, Acres) %>% 
   mutate(ApproxStWgt = Acres / (DesiredSS/5))
 
-write.csv(OriginalWeights, '../data/processed/OriginalWeightsSampleDesign.csv', row.names = F)
-
 OriginalWeights %>% 
   mutate(PropArea = round(PropArea, 3)) %>% 
   mutate(across(.cols = c(Acres, ApproxStWgt),  round)) %>% 
@@ -176,14 +179,13 @@ OriginalWeights %>%
                              'Prop. Site', 'No. Plots', 'Plot Wt.'),
                caption = "Original Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
-  
+
 rm(r, plot_summary)
 ```
 
 ```{r Adjust the Sample Point Weights across entire Field Office}
 
 Full_newWghts <- plotWeigher(OriginalWeights, pts)
-
 Full_newWghts %>% 
   mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
@@ -195,13 +197,21 @@ Full_newWghts %>%
                caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1))))
 
+OriginalWeights_results <- OriginalWeights
+NewWeights_results <- Full_newWghts
+
 rm(OriginalWeights, Full_newWghts)
 ```
 
+> "*greater than 70 percent of vegetation communities on (the remaining) BLM-administered lands*"
+
 \newpage
 
-The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. These areas are intended to have " ... greater than 80 percent vegetation communities  ... ". These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of plots in the region. As our sample design was initiated and completed during a period of drought (See...), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
+The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. Loosely, they are intended to have a higher percentage of the vegetation communities within the natural range of variation: 
 
+> "*greater than 80 percent of vegetation communities in ACEC's, WSA's...*" 
+
+These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of plots in the region. As our sample design was initiated and completed during a period of drought (See...), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
 
 ```{r Original Point weights for ACEC and WSA}
 
@@ -267,6 +277,9 @@ wsAcec_newWghts %>%
                & Wilderness Study Areas",               
                align = c("c", rep('r', times = (ncol(.) - 1))))
 
+OriginalWeights_results <- bind_rows(OriginalWeights_results, wsAcec_OriginalWeights)
+NewWeights_results <- bind_rows(NewWeights_results, wsAcec_newWghts)
+
 rm(wsAcec_OriginalWeights, wsAcec_pts)
 ```
 
@@ -320,6 +333,9 @@ OW_newWghts %>%
                caption = "Realized Sample Design for Dominguez-Escalante National Monument", 
                align = c("c", rep('r', times = (ncol(.) - 1))))
 
+OriginalWeights_results <- bind_rows(OriginalWeights_results, OW_deNM)
+NewWeights_results <- bind_rows(NewWeights_results, OW_newWghts)
+
 rm(OW_deNM, OW_deNM_pts)
 ```
 
@@ -364,6 +380,9 @@ GG_newWghts %>%
                              'Area Inf.', 'Plot Wt.', 'Sampled', 'Rejected'),
                caption = "Realized Sample Design for Gunnison Gorge National Monument", 
                align = c("c", rep('r', times = (ncol(.) - 1))))
+
+OriginalWeights_results <- bind_rows(OriginalWeights_results, GG_deNM)
+NewWeights_results <- bind_rows(NewWeights_results, GG_newWghts)
 
 rm(GG_deNM, GG_deNM_pts, pts)
 ```

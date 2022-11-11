@@ -287,6 +287,8 @@ NewWeights_results <- bind_rows(NewWeights_results, wsAcec_newWghts %>%
 points <- pts %>% 
   mutate('AoInference' = if_else(Plot.ID %in% wsAcec_pts$Plot.ID, 'ACEC-WSA', 'unassigned')) 
 
+NoStrata(wsAcec_newWghts)
+
 rm(wsAcec_OriginalWeights, wsAcec_pts, wsAcec_newWghts)
 ```
 
@@ -357,15 +359,20 @@ rm(OW_deNM, OW_deNM_pts, OW_newWghts)
 
 #### Gunnison Gorge National Monument
 
-
-```{r Original Point Weights for Gunnison Gorge NCA}
-
+```{r Gunnison Gorge area, results = 'hide'}
 GGnm <- monuments %>% filter(str_detect(NAME, 'Gunnison')) %>% 
   mutate(ID = 1:n(), .before = 1, TYPE = 'NM')
-  
+
+total_area <- round(as.numeric(measurements::conv_unit(st_area(GGnm), "m2", "acre"))) # mismatch because the NA
+ggarea <- TArea(GGnm)
+
 GG_deNM <- originalWeights(GGnm, strat_raster, pts)
 GG_deNM_pts <- GG_deNM[[1]]
 GG_deNM <- GG_deNM[[2]]
+```
+
+
+```{r Original Point Weights for Gunnison Gorge NCA}
 
 GG_deNM %>% 
   mutate(PropArea = round(PropArea, 3)) %>% 
@@ -376,11 +383,15 @@ GG_deNM %>%
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), 
                col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 
                              'Prop. Site', 'No. Plots', 'Plot Wt.'),
-               caption = "Original Sample Design for Dominguez-Escalante National Monument", 
+               caption = "Original Sample Design for Gunnison Gorge National Monument", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
 
-rm(deSS, lookup_table, monuments, strat_raster, GGnm)
+NoStrata(GG_deNM)
+
+rm(deSS, lookup_table, monuments, strat_raster, GGnm, ggarea)
 ```
+
+The Gunnison Gorge National Monument encompasses `r ggarea` acres, and contains only a few of the strata types covered in the design. It is the only sub-unit of the AIM sample design which is comprised primarily of salt desert, which is featured prominently along the Western portions of it. It also contains significant portion of Pinon-Juniper, adjacent to the cliffs overlooking the gorge, and some of the Target Frames best Sagebrush-Steppe along the Eastern portions. The area features only trace amount of `r NoStrata(GG_deNM)` of the original strata, resulting in them being devoid of any plots in the original draw. There were `r MinStrata(GG_deNM)` strata only present in minor amounts which had fewer than five plots drawn. 
 
 ```{r Final Points Weights for Gunnison Gorge NCA}
 
@@ -406,6 +417,8 @@ points <- points %>%
 rm(GG_deNM, GG_deNM_pts, pts, GG_newWghts)
 ```
 
+Of the `r drawnStrata(GG_deNM)` strata which had plots drawn within the monument, only `r SampledStrata(GG_deNM)` were successfully sampled. The Pinon-Juniper stratum, representing 29% of the area, only had one point sampled, accordingly no temporal analyses can be performed using this stratum. However, both the Salt Desert and Sagebrush-Steppe stratum, which compose roughly 55% of the monument, had enough plots sampled for temporal analyses. ...
+
 ```{r write out results, eval = F}
 
 points <- points %>% 
@@ -428,6 +441,8 @@ rm(OriginalWeights_results, NewWeights_results, points, originalWeights, plotWei
 \newpage
 
 ### Summary of Plot Sampling Efforts
+
+No clear biases existed in the success of plot sampling efforts with the exception of Mixed Conifer plots. 
 
 ```{r Alluvial tracking plot status, warning = F, fig.height = 4, fig.weight = 4, fig.cap = 'Fates of all potential AIM plots from the Sample Design'}
 

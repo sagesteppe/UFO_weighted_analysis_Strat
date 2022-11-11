@@ -153,3 +153,53 @@ plotWeigher <- function(OrigWeights, pts){
   return(newWghts)
   
 }
+
+under12 <- function(x){
+  numba <- 1:12
+  wumba <-  c("one", "two", 'three', 'four', 'five', 'six', 'seven',  'eight', 
+              'nine',  'ten', 'eleven', 'twelve')
+  x[x %in% numba] <- wumba[match(x, numba, nomatch = 0)]
+  return(x)
+}
+
+TArea <- function(x){
+  toString(format(round(as.numeric(measurements::conv_unit(
+    st_area(x), "m2", "acre"))), big.mark = ','))
+}
+
+
+NoStrata <- function(x){
+  
+  if (T %in% str_detect(colnames(x), 'Approx')){
+    y <- nrow(x[x$Sampled < 1,])
+    } else {
+      y <- nrow(x[x$PlotsSampled < 1,])
+    }
+  
+  z <- toString(under12(y))
+  return(z)
+}
+
+drawnStrata <- function(x){
+  y <- nrow(x[x$DesiredSS >= 1,])
+  z <- toString(under12(y))
+  return(z)
+}
+
+SampledStrata <- function(x){
+  y <- nrow(x[x$Sampled >= 1,])
+  z <- toString(under12(y))
+  return(z)
+}
+
+MinStrata <- function(x){
+  
+  if (T %in% str_detect(colnames(x), 'Approx')){
+    y <- nrow(x[x$Sampled %in% 1:4,])
+  } else {
+    y <- nrow(x[x$PlotsSampled %in% 1:4,])
+  }
+  
+  z <- toString(under12(y))
+  return(z)
+}

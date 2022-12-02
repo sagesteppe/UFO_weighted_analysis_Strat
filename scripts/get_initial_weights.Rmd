@@ -1,15 +1,16 @@
 ---
 title: "Plot Weights & Locations"
-author: "steppe"
+author: ""
 output:
+  pdf_document: default
   word_document: default
-always_allow_html: true
+always_allow_html: yes
 ---
 
 
-This AIM study was designed with three major principals in mind. The first, was maximizing the number of environments which it represents across the field office. The UFO field office varies by nearly XXXX feet, XXXX average precipitation, XXXX average temperatures, and displays a diversity of environments; and this sample design included this entire range of variation. To ensure that these diverse areas were represented, ten major strata were identified *see table*, in order to ensure that they had plots located in them in order to evaluate their ecological *integrity*. However, the management concerns, actions, and heterogeneity (internal dissimilarity) of these strata differ. To best understand the ecological context of these strata, and what management actions the BLM may take, the proportion of plots were tailored to each stratum. The third principal was that all plots be randomly placed within the stratum, which allows *inference* to be made from plots to the, unsampled, entirety of the stratum. This *weighted sample design* allows us to maximize statistical understanding while minimizing the field effort required to undertake it. 
+This AIM study was designed with three major principals in mind. The first, was maximizing the number of environments which it represents across the field office. The UFO field office varies by nearly XXXX feet, XXXX average precipitation, XXXX average temperatures, and displays a diversity of environments; and this sample design included this entire range of variation. To ensure that these diverse areas were represented, ten major strata were identified *see table*, in order to ensure that they had plots located in them in order to evaluate their ecological *integrity*. However, the management concerns, actions, and heterogeneity (internal dissimilarity) of these strata differ. To best understand the ecological context of these strata, and what management actions the BLM may take, the proportion of plots were tailored to each stratum. The third principal was that all plots be randomly placed within the stratum, which allows *inference* to be made from plots to the, unsampled, entirety of the stratum. This *weighted sample design* allows us to maximize statistical understanding while minimizing the field effort required to undertake it. Finally, the entire field office was designated as the *sample frame*, i.e. the area of analysis (or a spatially explicity population), which we can make statistical inference to.
 
-The initial sample design followed the general AIM implementation design to contain 255 plots to be sampled across five years. Sampling over a five year period is essential in order to ensure that plots are visited during periods wherein the vegetation is *reproductively active*, hence identifiable. A benefit of this prolonged time frame is that anomalous weather conditions are unlikely to affect the plots across the entire time period. For example, the condition of plots may be compared in a wet year, to a dry year, as referenced from a year with typical rainfall. In order to avoid random unexpected processes which cluster in space which may occur over the period of conducting the sample design, the entire design is split into a *panel* for each year of sampling. Each panel is composed of a subset of randomly selected points within the sample design and avoids missing swathes of the *target frame* during the sample period due to an event such as a prolonged wildfire. 
+The initial sample design followed the general AIM implementation design to contain 255 plots to be sampled across five years. Sampling over a five year period is essential in order to ensure that plots are visited during periods wherein the vegetation is *reproductively active*, hence identifiable. A benefit of this prolonged time frame is that anomalous weather conditions are unlikely to affect the plots across the entire time period. For example, the condition of plots may be compared in a wet year, to a dry year, as referenced from a year with typical rainfall. In order to avoid random unexpected processes which cluster in space which may occur over the period of conducting the sample design, the entire design is split into a *reproductively active* for each year of sampling. Each panel is composed of a subset of randomly selected points within the sample design and avoids missing swathes of the *target frame* during the sample period due to an event such as a prolonged wildfire. 
 
 The location of the random plots for AIM are generated via computer and a number of them may not feasibly be sampled. In general potential plots are most often, anecdotally, rejected for: being located on steep slopes which are dangerous for field crews to sample, requiring access to cross private land to access BLM which landowners deny. The inability of these plots to be sampled reduces the spatial extent of the strata which we may use statistics to infer across, and increases the measures of uncertainty associated with these areas. In this section we review the original sample design, derive original sample weights for sub-units of the field office, and calculate the weights for each of these units after the sample design has been completed. 
 
@@ -54,9 +55,11 @@ acres per plot, which it represents.
 
 ### Areas of Analysis
 
-The original AIM design covers the entire target frame of the UFO field office. However, a few additional analytical  and management sub-units exist within this extent. Their are two National Monuments - the Gunnison Gorge & Dominguez-Escalente - the latter of which is partially administered by the Grand Junction Field Office (GJFO), which have different management directives which distinguish them from the majority of land in the target frame. Likewise there are numerous Wilderness Study Areas (WSA's), and Area's of critical Environmental Concern (ACEC's), throughout the field office. The UFO intends these areas to have higher proportions of certain metrics relative to the remainder of BLM land. 
+The original AIM design covers the entire target frame of the UFO field office. However, a few additional analytical and management sub-units exist within this extent. There are three planning areas each with their own management objectives. The two National Monuments associated with the UFO - the Gunnison Gorge & Dominguez-Escalente - the latter of which is partially administered by the Grand Junction Field Office (GJFO), are associated with their own Planning Areas. Likewise both within those, and across the Field office, there are numerous Wilderness Study Areas (WSA's), and Area's of critical Environmental Concern (ACEC's). As discussed later, the UFO intends these areas to have higher proportions of certain vegetation metrics relative to the remainder of BLM land. 
 
-> "*Maximize native vegetation and natural processes by ensuring upland vegetation communities are within the range of natural variability, with an appropriate mix of plant functional groups, cover, and diversity, according to best available science ... over 10 years with 80 percent confidence*" 
+The Uncompahgre Resource Management Plan, completed in June 2019 covers 675,800 acres of the field office, and provides the definitive source of management objectives for the Field Office (summarized in VEG-OBJ-01 in Section II p. 23):
+
+> "*Maximize native vegetation and natural processes by ensuring upland vegetation communities are within the range of natural variability, with an appropriate mix of plant functional groups, cover, and diversity, according to best available science on greater than 80 percent of vegetation communities in ACECs, WSAs, suitable WSR segments, and lands managed to minimize impacts on wilderness characteristics and on greater than 70 percent of vegetation communities on the remaining BLM- administered lands, over 10 years with 80 percent confidence.*" 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F)
@@ -74,7 +77,7 @@ library(ggalluvial)
 source('functions.R')
 ```
 
-```{r}
+```{r Import and tidy data}
 p2d <- '../data/raw'
 
 plot_status <- read.csv(file.path(p2d, list.files(path = p2d, pattern = "summary.csv")))  %>% 
@@ -287,7 +290,7 @@ NewWeights_results <- bind_rows(NewWeights_results, wsAcec_newWghts %>%
 points <- pts %>% 
   mutate('AoInference' = if_else(Plot.ID %in% wsAcec_pts$Plot.ID, 'ACEC-WSA', 'unassigned')) 
 
-NoStrata(wsAcec_newWghts)
+#NoStrata(wsAcec_newWghts)
 
 rm(wsAcec_OriginalWeights, wsAcec_pts, wsAcec_newWghts)
 ```
@@ -326,6 +329,11 @@ OW_deNM %>%
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
 
 rm(uFO, p2d, DEnm, spatial_products)
+```
+
+
+```{r DE map,  fig.cap = "All plots sampled in the vicinity of the National Conservation Area, by both the UFO and Grand Junction Field Office. The GJFO is North (towards the top of the page) of the black line running across the map."}
+knitr::include_graphics('../graphics/maps/DominguezEscalenteAIMPlots.png')
 ```
 
 Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
@@ -372,6 +380,8 @@ GG_deNM <- GG_deNM[[2]]
 ```
 
 
+The Gunnison Gorge National Monument encompasses `r ggarea` acres, and contains only a few of the strata types covered in the design. It is the only sub-unit of the AIM sample design which is comprised primarily of salt desert, which is featured prominently along the Western portions of it. It also contains significant portion of Pinon-Juniper, adjacent to the cliffs overlooking the gorge, and some of the Target Frames best Sagebrush-Steppe along the Eastern portions. The area features only trace amount of `r NoStrata(GG_deNM)` of the original strata, resulting in them being devoid of any plots in the original draw. There were `r MinStrata(GG_deNM)` strata only present in minor amounts which had fewer than five plots drawn
+
 ```{r Original Point Weights for Gunnison Gorge NCA}
 
 GG_deNM %>% 
@@ -386,12 +396,13 @@ GG_deNM %>%
                caption = "Original Sample Design for Gunnison Gorge National Monument", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
 
-NoStrata(GG_deNM)
-
-rm(deSS, lookup_table, monuments, strat_raster, GGnm, ggarea)
+rm(deSS, lookup_table, monuments, strat_raster, GGnm)
+```
+ 
+```{r GG map,  fig.cap = "All plots sampled in the vicinity of the National Conservation Area"}
+knitr::include_graphics('../graphics/maps/GunnisonGorgeAIMPlots.png')
 ```
 
-The Gunnison Gorge National Monument encompasses `r ggarea` acres, and contains only a few of the strata types covered in the design. It is the only sub-unit of the AIM sample design which is comprised primarily of salt desert, which is featured prominently along the Western portions of it. It also contains significant portion of Pinon-Juniper, adjacent to the cliffs overlooking the gorge, and some of the Target Frames best Sagebrush-Steppe along the Eastern portions. The area features only trace amount of `r NoStrata(GG_deNM)` of the original strata, resulting in them being devoid of any plots in the original draw. There were `r MinStrata(GG_deNM)` strata only present in minor amounts which had fewer than five plots drawn. 
 
 ```{r Final Points Weights for Gunnison Gorge NCA}
 
@@ -414,7 +425,7 @@ NewWeights_results <- bind_rows(NewWeights_results, GG_newWghts %>%
 points <- points %>% 
   mutate(AoInference = if_else(Plot.ID %in% GG_deNM_pts$Plot.ID, 'DE-NM', AoInference)) 
 
-rm(GG_deNM, GG_deNM_pts, pts, GG_newWghts)
+rm( GG_deNM_pts, pts, GG_newWghts, ggarea)
 ```
 
 Of the `r drawnStrata(GG_deNM)` strata which had plots drawn within the monument, only `r SampledStrata(GG_deNM)` were successfully sampled. The Pinon-Juniper stratum, representing 29% of the area, only had one point sampled, accordingly no temporal analyses can be performed using this stratum. However, both the Salt Desert and Sagebrush-Steppe stratum, which compose roughly 55% of the monument, had enough plots sampled for temporal analyses. ...
@@ -435,7 +446,7 @@ rm(OriginalWeights_results, NewWeights_results, points, p)
 ```
 
 ```{r}
-rm(OriginalWeights_results, NewWeights_results, points, originalWeights, plotWeigher)
+rm(OriginalWeights_results, NewWeights_results, points, originalWeights, plotWeigher, GG_deNM)
 ```
 
 \newpage

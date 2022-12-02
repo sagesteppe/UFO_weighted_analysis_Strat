@@ -168,18 +168,6 @@ TArea <- function(x){
 }
 
 
-NoStrata <- function(x){
-  
-  if (T %in% str_detect(colnames(x), 'Approx')){
-    y <- nrow(x[x$Sampled < 1,])
-    } else {
-      y <- nrow(x[x$PlotsSampled < 1,])
-    }
-  
-  z <- toString(under12(y))
-  return(z)
-}
-
 drawnStrata <- function(x){
   y <- nrow(x[x$DesiredSS >= 1,])
   z <- toString(under12(y))
@@ -192,14 +180,20 @@ SampledStrata <- function(x){
   return(z)
 }
 
+NoStrata <- function(x){
+  
+  if (T %in% str_detect(colnames(x), 'Approx')){
+    y <- nrow(x[x$Sampled < 1,]) } else { y <- nrow(x[x$PlotsSampled < 1,]) }
+  z <- toString(under12(y))
+  
+  return(z)
+}
+
 MinStrata <- function(x){
   
   if (T %in% str_detect(colnames(x), 'Approx')){
-    y <- nrow(x[x$Sampled %in% 1:4,])
-  } else {
-    y <- nrow(x[x$PlotsSampled %in% 1:4,])
-  }
-  
+    y <- nrow(x[x$Sampled %in% 1:4,]) } else { y <- nrow(x[x$PlotsSampled %in% 1:4,]) }
   z <- toString(under12(y))
+  
   return(z)
 }

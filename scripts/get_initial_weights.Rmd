@@ -213,11 +213,7 @@ rm(OriginalWeights, Full_newWghts)
 \newpage
 
 ####  Areas of Critical Environmental Concern (ACEC's) and Wilderness Study Areas (WSA)
-The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. Loosely, they are intended to have a higher percentage of the vegetation communities within the natural range of variation: 
 
-> "*greater than 80 percent of vegetation communities in ACEC's, WSA's...*" 
-
-These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of plots in the region. As our sample design was initiated and completed during a period of drought (See...), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
 
 ```{r Original Point weights for ACEC and WSA}
 
@@ -243,12 +239,21 @@ wsa <- st_read(file.path(spatial_products, 'BLM_CO_WSA/nlcs_wsa_poly.shp'),
 wsAcec <- bind_rows(acecs, wsa) %>% 
   mutate(ID = 1:n(), .before = 1)
 
-rm(acecs, wsa)
-
-wsAcec_OriginalWeights <- originalWeights(sample_area = wsAcec, strat_raster = strat_raster, pt_data = pts)
+wsAcec_OriginalWeights <- originalWeights(sample_area = wsAcec,
+                                          strat_raster = strat_raster, pt_data = pts)
 wsAcec_pts <- wsAcec_OriginalWeights[[1]] # we return a list with the points needed for recalculating the weights
 wsAcec_OriginalWeights <- wsAcec_OriginalWeights[[2]]
+```
 
+The Uncompahgre Field office has `r nrow(acecs)` ACEC's.
+
+The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. Loosely, they are intended to have a higher percentage of the vegetation communities within the natural range of variation: 
+
+> "*greater than 80 percent of vegetation communities in ACEC's, WSA's...*" 
+
+These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of plots in the region. As our sample design was initiated and completed during a period of drought (See...), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
+
+```{r wsAcec original weights table}
 wsAcec_OriginalWeights %>% 
   mutate(PropArea = round(PropArea, 3)) %>% 
   mutate(across(.cols = c(Acres, ApproxStWgt),  round)) %>% 
@@ -258,8 +263,7 @@ wsAcec_OriginalWeights %>%
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), 
                col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 
                              'Prop. Site', 'No. Plots', 'Plot Wt.'),
-               caption = "Original Sample Design for Areas of Critical Environmental Concern
-               & Wilderness Study Areas", 
+               caption = "Original Sample Design for Areas of Critical Environmental Concern and Wilderness Study Areas", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
 
 rm(raster_cells, wsaSpat, wsAcec, wsAcec_area_summary, wsAcec_pt_draw,
@@ -267,6 +271,50 @@ rm(raster_cells, wsaSpat, wsAcec, wsAcec_area_summary, wsAcec_pt_draw,
 ```
 
 Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
+
+```{r acec wsa table}
+
+acecs <- acecs %>% group_by(NAME) %>% 
+  summarize(geometry = st_union(geometry)) %>% 
+  filter(NAME != 'Sinbad Valley ACEC')
+
+acec_pts <- st_intersection(st_transform(wsAcec_pts, st_crs(acecs)) , acecs) %>% 
+  group_by(NAME) 
+
+acec_pts_rejected <- acec_pts %>% 
+  filter(!str_detect(Panel, 'versample'), Plot.Status == 'not_sampled') %>% 
+  add_count(name = 'plots_rejected') %>% 
+  select(NAME, plots_rejected) %>% 
+  st_drop_geometry()
+
+acec_pts_sampled <- acec_pts %>% 
+  filter(!str_detect(Panel, 'versample')) %>% 
+  add_count(name = 'total_plots') %>% 
+  select(NAME, total_plots) %>% 
+  left_join(., acec_pts_rejected, by = 'NAME') %>% 
+  st_drop_geometry() %>% 
+  right_join(., acecs , by = 'NAME') %>% 
+  select(NAME, total_plots, plots_rejected) %>% 
+  distinct() %>% 
+  mutate(across(where(is.numeric), ~ replace_na(.x, 0)))
+
+# wsa <- wsa %>% group_by(NAME) %>% 
+#  summarize(geometry = st_union(geometry)) # wsa are off. 
+
+acecs %>% 
+  mutate(Area = round(as.numeric(units::set_units(st_area(.), "acre")), 0)) %>% 
+  st_drop_geometry() %>% 
+  arrange(-Area) %>% 
+  left_join(., acec_pts_sampled)  %>% 
+  knitr::kable(., digits = 2, format.args = list(big.mark = ","),
+               col.names = c('Name', 'Area (ac.)',  
+                             'Drawn', 'Sampled'),
+                             caption = "Number of Plots Drawn per ACEC",               
+               align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
+  kableExtra::add_header_above(., c(" ", "Group 1" = 3))
+
+```
+
 
 ```{r Final Point weights for ACEC and WSA}
 wsAcec_newWghts <- plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
@@ -279,8 +327,7 @@ wsAcec_newWghts %>%
   knitr::kable(., digits = 2, format.args = list(big.mark = ","),
                col.names = c('Stratum', 'Inf. Prop.',  
                              'Area Inf.', 'Plot Wt.', 'Sampled', 'Rejected'),
-                             caption = "Realized Sample Design for Areas of Critical Environmental Concern
-               & Wilderness Study Areas",               
+                             caption = "Realized Sample Design for Areas of Critical Environmental Concern and Wilderness Study Areas", 
                align = c("c", rep('r', times = (ncol(.) - 1))))
 
 OriginalWeights_results <- bind_rows(OriginalWeights_results, wsAcec_OriginalWeights %>% 

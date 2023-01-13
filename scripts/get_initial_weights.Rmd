@@ -203,11 +203,11 @@ knitr::include_graphics('../graphics/maps/AIMPlots.png')
 Full_newWghts <- plotWeigher(OriginalWeights, pts)
 
 Full_newWghts %>% 
-  mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
+  mutate(across(TotalAcres:WgtAcres, ~ round(.x, 3))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
   arrange(-TotalAcres) %>% 
   select(Stratum, WghtPerPlot, WgtAcres, PlotsSampled, PlotsRejected) %>% 
-  knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
+  knitr::kable(., digits = 3, format.args = list(big.mark = ","), booktabs = T,
                col.names = c('Stratum',  'Plot Wt.', 'Plot Wt. Ac.', 'Sampled', 'Rejected'),
                caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
@@ -335,7 +335,7 @@ acecs %>%
 wsAcec_newWghts <- plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
 
 wsAcec_newWghts %>% 
-  mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
+  mutate(across(TotalAcres:WgtAcres, ~ round(.x, 3))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
   arrange(-TotalAcres) %>%  
   select(Stratum, WghtPerPlot, WgtAcres, PlotsSampled, PlotsRejected) %>% 
@@ -404,7 +404,7 @@ Strata with five or more plots, would allow for temporal analyses to be conducte
 
 OW_newWghts <- plotWeigher(OW_deNM, OW_deNM_pts)
 OW_newWghts %>% 
-  mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
+  mutate(across(TotalAcres:WgtAcres, ~ round(.x, 3))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
   arrange(-TotalAcres) %>%
   select(Stratum, WghtPerPlot, WgtAcres, PlotsSampled, PlotsRejected) %>% 
@@ -469,7 +469,7 @@ knitr::include_graphics('../graphics/maps/GunnisonGorgeAIMPlots.png')
 
 GG_newWghts <- plotWeigher(GG_deNM, GG_deNM_pts)
 GG_newWghts %>% 
-  mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
+  mutate(across(TotalAcres:WgtAcres, ~ round(.x, 3))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
   arrange(-TotalAcres) %>%
   select(Stratum, WghtPerPlot, WgtAcres, PlotsSampled, PlotsRejected) %>% 

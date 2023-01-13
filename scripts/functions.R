@@ -90,10 +90,9 @@ originalWeights <- function(sample_area, strat_raster, pt_data){
 #' @param OrigWeights a dataframe of the output of the originalWeigher function
 #' @param pts an sf tibble of all drawn (at least) base points for the sample 
 #' design with plot fates in a column ('sampled', 'rejected').
-
 plotWeigher <- function(OrigWeights, pts){
   
-  pts_base <- filter(pts, str_detect(Panel, 'OverSample', negate = T))
+  pts_base <- pts #filter(pts, str_detect(Panel, 'OverSample', negate = T))
   
   aim_sites <- pts_base %>%
     mutate(Plot.Status = if_else(Plot.Status == 'sampled', T, F)) %>% 
@@ -117,37 +116,34 @@ plotWeigher <- function(OrigWeights, pts){
   
   res <- adjwgt(aim_wgt, aim_wgtcat, framesize = aim_framesize, sites = aim_sites) 
   names(res) <- aim_wgtcat
-  res <- ifelse(res > 1, 1/res, res)
   
-  newWghts <- data.frame(
-    'Stratum' = names(res),
-    'Weight' = res) %>% 
+  newWghts <- data.frame( 
+    'Stratum' = names(res),  
+    'WghtPerPlot' = res) %>% 
     group_by(Stratum) %>% 
-    filter(Weight > 0) %>% 
+    filter(WghtPerPlot > 0) %>% 
     add_count(name = 'PlotsSampled') %>% 
-    distinct(.keep_all = T) %>% 
-    mutate(WghtPerPlot = Weight / PlotsSampled)
+    distinct(.keep_all = T) 
   
   newWghts1 <- data.frame(
     'Stratum' = names(res),
-    'Weight' = res) %>% 
-    group_by(Stratum, Weight) %>%
-    filter(Weight == 0) %>% 
+    'WghtPerPlot' = res) %>% 
+    group_by(Stratum, WghtPerPlot) %>%
+    filter(WghtPerPlot == 0) %>% 
     add_count(name = 'PlotsRejected')  %>% 
     distinct(.keep_all = T) %>% 
     ungroup %>% 
-    select(-Weight)
+    select(-WghtPerPlot)
   
   newWghts <- left_join(newWghts, newWghts1) %>% 
     left_join(., OrigWeights %>% 
-                select(TotalAcres = Acres, Rejected, Stratum) ) %>% 
-    arrange(-Weight) %>%  # this works to catch any
+                select(TotalAcres = Acres, Rejected, Stratum, ApproxStWgt) ) %>% 
+    arrange(-WghtPerPlot) %>%  # this works to catch any
     group_by(Stratum) %>% # values which may be introduced
     slice_head(n = 1) %>%  # by an empty second data.frame
-    mutate(WgtAcres = WghtPerPlot * TotalAcres, 
-           AreaInference = TotalAcres * Weight)  %>% 
-    select(Stratum, TotalAcres, AreaInference, WgtAcres, 
-           PlotsSampled, PlotsRejected, PropInference = Weight, WghtPerPlot)  %>% 
+    mutate(WgtAcres = if_else(WghtPerPlot > 1, ApproxStWgt, ApproxStWgt * WghtPerPlot)) %>% 
+    select(Stratum, TotalAcres, WgtAcres, 
+           PlotsSampled, PlotsRejected)  %>% 
     mutate(across(where(is.numeric), ~ replace_na(.x, 0)))
   
   return(newWghts)

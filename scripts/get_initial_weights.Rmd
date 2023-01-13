@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = F)
 knitr::opts_chunk$set(dpi = 300) 
 knitr::opts_chunk$set(message = F)
 knitr::opts_chunk$set(warning = F)
+knitr::opts_chunk$set(fig.pos = 'H')
 ```
 
 
@@ -70,7 +71,6 @@ The original AIM design covers the entire target frame of the UFO field office. 
 The Uncompahgre Resource Management Plan, completed in June 2019 covers 675,800 acres of the field office, and provides the definitive source of management objectives for the Field Office (summarized in VEG-OBJ-01 in Section II p. 23):
 
 > "*Maximize native vegetation and natural processes by ensuring upland vegetation communities are within the range of natural variability, with an appropriate mix of plant functional groups, cover, and diversity, according to best available science on greater than 80 percent of vegetation communities in ACECs, WSAs, suitable WSR segments, and lands managed to minimize impacts on wilderness characteristics and on greater than 70 percent of vegetation communities on the remaining BLM- administered lands, over 10 years with 80 percent confidence.*" 
-> 
 > `r tufte::quote_footer('--- RMP 2019')`
 
 ```{r Load libraries, warning = F, message = F, echo = F}
@@ -191,6 +191,11 @@ OriginalWeights %>%
 rm(r, plot_summary)
 ```
 
+
+```{r UFO map,  fig.cap = "All plots sampled across the Uncompahgre Field Office"}
+knitr::include_graphics('../graphics/maps/AIMPlots.png')
+```
+
 ```{r Adjust the Sample Point Weights across entire Field Office}
 
 Full_newWghts <- plotWeigher(OriginalWeights, pts)
@@ -198,13 +203,12 @@ Full_newWghts %>%
   mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
   arrange(-TotalAcres) %>% 
-  select(Stratum, PropInference, AreaInference:WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  select(Stratum, WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum', 'Inf. Prop.', 
-                             'Area Inf.', 'Plot Wt.', 'Sampled', 'Rejected'),
+               col.names = c('Stratum',  'Plot Wt.', 'Sampled', 'Rejected'),
                caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" " = 4,  "No. Plots" = 2))
+  kableExtra::add_header_above(., c(" " = 2,  "No. Plots" = 2))
 
 OriginalWeights_results <- mutate(OriginalWeights, 'Area' = 'SampleFrame') %>% 
   select(-any_of(c('StratumName')))
@@ -258,7 +262,6 @@ The Uncompahgre Field office has `r nrow(acecs)` ACEC's.
 The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. Loosely, they are intended to have a higher percentage of the vegetation communities within the natural range of variation: 
 
 > "*greater than 80 percent of vegetation communities in ACEC's, WSA's...*" 
-> 
 > `r tufte::quote_footer('--- RMP 2019')`
 
 These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of plots in the region. As our sample design was initiated and completed during a period of drought (See...), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
@@ -333,13 +336,12 @@ wsAcec_newWghts %>%
   mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
   arrange(-TotalAcres) %>% 
-  select(Stratum, PropInference, AreaInference:WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  select(Stratum, WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum', 'Inf. Prop.',  
-                             'Area Inf.', 'Plot Wt.', 'Sampled', 'Rejected'),
-                             caption = "Realized Sample Design for Areas of Critical Environmental Concern and Wilderness Study Areas", 
+               col.names = c('Stratum',  'Plot Wt.', 'Sampled', 'Rejected'),
+               caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" " = 4,  "No. Plots" = 2))
+  kableExtra::add_header_above(., c(" " = 2,  "No. Plots" = 2))
 
 OriginalWeights_results <- bind_rows(OriginalWeights_results, wsAcec_OriginalWeights %>% 
                                        mutate('Area' = 'ACEC-WSA'))
@@ -403,13 +405,12 @@ OW_newWghts %>%
   mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
   arrange(-TotalAcres) %>% 
-  select(Stratum, PropInference, AreaInference:WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  select(Stratum, WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum', 'Inf. Prop.', 
-                             'Area Inf.', 'Plot Wt.', 'Sampled', 'Rejected'),
-               caption = "Realized Sample Design for Dominguez-Escalante National Monument", 
+               col.names = c('Stratum',  'Plot Wt.', 'Sampled', 'Rejected'),
+               caption = "Realized Weighted Sample Design for the Dominguez-Escalente", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" " = 4,  "No. Plots" = 2))
+  kableExtra::add_header_above(., c(" " = 2,  "No. Plots" = 2))
 
 OriginalWeights_results <- bind_rows(OriginalWeights_results, OW_deNM %>% 
                                        mutate('Area' = 'DE-NM'))
@@ -469,12 +470,12 @@ GG_newWghts %>%
   mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
   arrange(-TotalAcres) %>% 
-  select(Stratum, PropInference, AreaInference:WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  select(Stratum, WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum', 'Inf. Prop.', 
-                             'Area Inf.', 'Plot Wt.', 'Sampled', 'Rejected'),
-               caption = "Realized Sample Design for Gunnison Gorge National Monument", 
-               align = c("c", rep('r', times = (ncol(.) - 1))))
+               col.names = c('Stratum',  'Plot Wt.', 'Sampled', 'Rejected'),
+               caption = "Realized Weighted Sample Design for the Gunnison Gorge NM", 
+               align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
+  kableExtra::add_header_above(., c(" " = 2,  "No. Plots" = 2))
 
 OriginalWeights_results <- bind_rows(OriginalWeights_results, GG_deNM %>% 
                                        mutate('Area' = 'GG-NM'))

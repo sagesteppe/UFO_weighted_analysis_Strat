@@ -142,7 +142,7 @@ plotWeigher <- function(OrigWeights, pts){
     group_by(Stratum) %>% # values which may be introduced
     slice_head(n = 1) %>%  # by an empty second data.frame
     mutate(WgtAcres = if_else(WghtPerPlot > 1, ApproxStWgt, ApproxStWgt * WghtPerPlot)) %>% 
-    select(Stratum, TotalAcres, WgtAcres, 
+    select(Stratum, TotalAcres, WghtPerPlot, WgtAcres, 
            PlotsSampled, PlotsRejected)  %>% 
     mutate(across(where(is.numeric), ~ replace_na(.x, 0)))
   

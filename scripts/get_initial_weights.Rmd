@@ -4,6 +4,8 @@ author:
 output: 
   pdf_document: default
   word_document: default
+header-includes:
+ \usepackage{float}
 always_allow_html: yes
 csl: ../citations/citations/apa.csl
 bibliography: ../citations/citations/citations.bib
@@ -199,16 +201,17 @@ knitr::include_graphics('../graphics/maps/AIMPlots.png')
 ```{r Adjust the Sample Point Weights across entire Field Office}
 
 Full_newWghts <- plotWeigher(OriginalWeights, pts)
+
 Full_newWghts %>% 
   mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
   arrange(-TotalAcres) %>% 
-  select(Stratum, WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  select(Stratum, WghtPerPlot, WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum',  'Plot Wt.', 'Sampled', 'Rejected'),
+               col.names = c('Stratum',  'Plot Wt.', 'Plot Wt. Ac.', 'Sampled', 'Rejected'),
                caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" " = 2,  "No. Plots" = 2))
+  kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2))
 
 OriginalWeights_results <- mutate(OriginalWeights, 'Area' = 'SampleFrame') %>% 
   select(-any_of(c('StratumName')))
@@ -277,8 +280,7 @@ wsAcec_OriginalWeights %>%
                col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 
                              'Prop. Site', 'No. Plots', 'Plot Wt.'),
                caption = "Original Sample Design for Areas of Critical Environmental Concern and Wilderness Study Areas", 
-               align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" " = 4,  "No. Plots" = 2))
+               align = c("c", rep('r', times = (ncol(.) - 1)))) 
 
 rm(raster_cells, wsaSpat, wsAcec, wsAcec_area_summary, wsAcec_pt_draw,
    base_wsAcec_pts, raster_cells, wsAcec_areas, design_rast)
@@ -335,13 +337,13 @@ wsAcec_newWghts <- plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
 wsAcec_newWghts %>% 
   mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
-  arrange(-TotalAcres) %>% 
-  select(Stratum, WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  arrange(-TotalAcres) %>%  
+  select(Stratum, WghtPerPlot, WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum',  'Plot Wt.', 'Sampled', 'Rejected'),
+               col.names = c('Stratum',  'Plot Wt.', 'Plot Wt. Ac.', 'Sampled', 'Rejected'),
                caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" " = 2,  "No. Plots" = 2))
+  kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2))
 
 OriginalWeights_results <- bind_rows(OriginalWeights_results, wsAcec_OriginalWeights %>% 
                                        mutate('Area' = 'ACEC-WSA'))
@@ -404,13 +406,13 @@ OW_newWghts <- plotWeigher(OW_deNM, OW_deNM_pts)
 OW_newWghts %>% 
   mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
-  arrange(-TotalAcres) %>% 
-  select(Stratum, WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  arrange(-TotalAcres) %>%
+  select(Stratum, WghtPerPlot, WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum',  'Plot Wt.', 'Sampled', 'Rejected'),
-               caption = "Realized Weighted Sample Design for the Dominguez-Escalente", 
+               col.names = c('Stratum',  'Plot Wt.', 'Plot Wt. Ac.', 'Sampled', 'Rejected'),
+               caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" " = 2,  "No. Plots" = 2))
+  kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2))
 
 OriginalWeights_results <- bind_rows(OriginalWeights_results, OW_deNM %>% 
                                        mutate('Area' = 'DE-NM'))
@@ -469,13 +471,13 @@ GG_newWghts <- plotWeigher(GG_deNM, GG_deNM_pts)
 GG_newWghts %>% 
   mutate(across(TotalAcres:WgtAcres, ~ round(.x))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
-  arrange(-TotalAcres) %>% 
-  select(Stratum, WgtAcres, PlotsSampled, PlotsRejected) %>% 
+  arrange(-TotalAcres) %>%
+  select(Stratum, WghtPerPlot, WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum',  'Plot Wt.', 'Sampled', 'Rejected'),
-               caption = "Realized Weighted Sample Design for the Gunnison Gorge NM", 
+               col.names = c('Stratum',  'Plot Wt.', 'Plot Wt. Ac.', 'Sampled', 'Rejected'),
+               caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" " = 2,  "No. Plots" = 2))
+  kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2))
 
 OriginalWeights_results <- bind_rows(OriginalWeights_results, GG_deNM %>% 
                                        mutate('Area' = 'GG-NM'))

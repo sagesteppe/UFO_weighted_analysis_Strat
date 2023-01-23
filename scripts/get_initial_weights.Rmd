@@ -421,7 +421,7 @@ NewWeights_results <- bind_rows(NewWeights_results, OW_newWghts %>%
 points <- points %>% 
   mutate(AoInference = if_else(Plot.ID %in% OW_deNM_pts$Plot.ID, 'DE-NM', AoInference))
 
-rm(OW_deNM, OW_deNM_pts, OW_newWghts)
+rm(OW_deNM, OW_newWghts)
 ```
 
 \newpage
@@ -435,9 +435,9 @@ GGnm <- monuments %>% filter(str_detect(NAME, 'Gunnison')) %>%
 total_area <- round(as.numeric(measurements::conv_unit(st_area(GGnm), "m2", "acre"))) # mismatch because the NA
 ggarea <- TArea(GGnm)
 
-GG_deNM <- originalWeights(GGnm, strat_raster, pts)
-GG_deNM_pts <- GG_deNM[[1]]
-GG_deNM <- GG_deNM[[2]]
+GG_NM <- originalWeights(GGnm, strat_raster, pts)
+GG_NM_pts <- GG_NM[[1]]
+GG_NM <- GG_NM[[2]]
 ```
 
 
@@ -445,7 +445,7 @@ The Gunnison Gorge National Monument encompasses `r ggarea` acres, and contains 
 
 ```{r Original Point Weights for Gunnison Gorge NCA}
 
-GG_deNM %>% 
+GG_NM %>% 
   mutate(PropArea = round(PropArea, 3)) %>% 
   mutate(across(.cols = c(Acres, ApproxStWgt),  round)) %>% 
   arrange(-Acres) %>% 
@@ -467,7 +467,7 @@ knitr::include_graphics('../graphics/maps/GunnisonGorgeAIMPlots.png')
 
 ```{r Final Points Weights for Gunnison Gorge NCA}
 
-GG_newWghts <- plotWeigher(GG_deNM, GG_deNM_pts)
+GG_newWghts <- plotWeigher(GG_NM, GG_NM_pts)
 GG_newWghts %>% 
   mutate(across(TotalAcres:WgtAcres, ~ round(.x, 3))) %>% 
   mutate(across(PlotsSampled:PlotsRejected, ~ replace_na(.x, 0))) %>% 
@@ -479,14 +479,14 @@ GG_newWghts %>%
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
   kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2))
 
-OriginalWeights_results <- bind_rows(OriginalWeights_results, GG_deNM %>% 
+OriginalWeights_results <- bind_rows(OriginalWeights_results, GG_NM %>% 
                                        mutate('Area' = 'GG-NM'))
 NewWeights_results <- bind_rows(NewWeights_results, GG_newWghts %>% 
                                        mutate('Area' = 'GG-NM'))
 points <- points %>% 
-  mutate(AoInference = if_else(Plot.ID %in% GG_deNM_pts$Plot.ID, 'DE-NM', AoInference)) 
+  mutate(AoInference = if_else(Plot.ID %in% GG_NM_pts$Plot.ID, 'GG-NM', AoInference)) 
 
-rm( GG_deNM_pts, pts, GG_newWghts, ggarea)
+rm(pts, GG_newWghts, ggarea, GG_NM)
 ```
 
 Of the `r drawnStrata(GG_deNM)` strata which had plots drawn within the monument, only `r SampledStrata(GG_deNM)` were successfully sampled. The Pinon-Juniper stratum, representing 29% of the area, only had one point sampled, accordingly no temporal analyses can be performed using this stratum. However, both the Salt Desert and Sagebrush-Steppe stratum, which compose roughly 55% of the monument, had enough plots sampled for temporal analyses. ...
@@ -542,5 +542,7 @@ ggplot(data = ps,
 
 rm(ps, plot_status)
 ```
+
+
 
 

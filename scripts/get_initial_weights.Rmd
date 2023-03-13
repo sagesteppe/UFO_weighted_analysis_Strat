@@ -5,12 +5,16 @@ output:
   pdf_document: default
   word_document: default
 header-includes:
- \usepackage{float}
+- \usepackage{float}
+- \usepackage[width=\textwidth]{caption}
+- \usepackage{wrapfig}
 always_allow_html: yes
 csl: ../citations/citations/apa.csl
 bibliography: ../citations/citations/citations.bib
 link-citations: yes
 ---
+
+\vspace{-1cm}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F)
@@ -21,7 +25,7 @@ knitr::opts_chunk$set(fig.pos = 'H')
 ```
 
 
-This AIM study was designed with three major principals in mind. The first, was maximizing the number of environments which it represents across the field office. The UFO field office varies by nearly XXXX feet, XXXX average precipitation, XXXX average temperatures, and displays a diversity of environments; and this sample design included this entire range of variation. To ensure that these diverse areas were represented, ten major strata were identified *see table*, in order to ensure that they had plots located in them in order to evaluate their ecological *integrity*. However, the management concerns, actions, and heterogeneity (internal dissimilarity) of these strata differ. To best understand the ecological context of these strata, and what management actions the BLM may take, the proportion of plots were tailored to each stratum. The third principal was that all plots be randomly placed within the stratum, which allows *inference* to be made from plots to the, unsampled, entirety of the stratum. This *weighted sample design* allows us to maximize statistical understanding while minimizing the field effort required to undertake it. Finally, the entire field office was designated as the *sample frame*, i.e. the area of analysis (or a spatially explicity population), which we can make statistical inference to.
+This AIM study was designed with three major principals in mind. The first, was maximizing the number of environments which it represents across the field office. The UFO field office varies by nearly XXXX feet, XXXX average precipitation, XXXX average temperatures, and displays a diversity of environments; and this sample design included this entire range of variation. To ensure that these diverse areas were represented, ten major strata were identified *see table*, in order to ensure that they had plots located in them in order to evaluate their ecological *integrity*. However, the management concerns, actions, and heterogeneity (internal dissimilarity) of these strata differ. To best understand the ecological context of these strata, and what management actions the BLM may take, the proportion of plots were tailored to each stratum. The third principal was that all plots be randomly placed within the stratum, which allows *inference* to be made from plots to the, unsampled, entirety of the stratum. This *weighted sample design* allows us to maximize statistical understanding while minimizing the field effort required to undertake it. Finally, the entire field office was designated as the *sample frame*, i.e. the area of analysis (or a spatially explicit population), which statistical inference can be made to.
 
 The initial sample design followed the general AIM implementation design to contain 255 plots to be sampled across five years. Sampling over a five year period is essential in order to ensure that plots are visited during periods wherein the vegetation is *reproductively active*, hence identifiable. A benefit of this prolonged time frame is that anomalous weather conditions are unlikely to affect the plots across the entire time period. For example, the condition of plots may be compared in a wet year, to a dry year, as referenced from a year with typical rainfall. In order to avoid random unexpected processes which cluster in space which may occur over the period of conducting the sample design, the entire design is split into a *reproductively active* for each year of sampling. Each panel is composed of a subset of randomly selected points within the sample design and avoids missing swathes of the *target frame* during the sample period due to an event such as a prolonged wildfire. 
 
@@ -80,6 +84,7 @@ library(tidyverse)
 library(sf)
 library(terra)
 library(spsurvey)
+library(kableExtra)
 library(ggalluvial)
 source('functions.R')
 ```
@@ -185,18 +190,24 @@ OriginalWeights %>%
   ungroup() %>% 
   select(Stratum, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area',
+               col.names = c('Stratum', 'Area (acres)', 'Prop. Area',
                              'Prop. Site', 'No. Plots', 'Plot Wt.'),
                caption = "Original Sample Design for the Entire Sample Frame", 
-               align = c("c", rep('r', times = (ncol(.) - 1)))) 
+               align = c("c", rep('r', times = (ncol(.) - 1))))  %>% 
+  kable_styling(full_width = F)
 
 rm(r, plot_summary)
 ```
 
+## All land, less species status
 
-```{r UFO map,  fig.cap = "All plots sampled across the Uncompahgre Field Office"}
-knitr::include_graphics('../graphics/maps/AIMPlots.png')
-```
+The majority of land administered by the field office does not fall under any special regulatory status, such as those for the ACEC's and National Conservation Areas. The initial AIM sample design covered the entirety of the Field Office, and did not separate out, or weigh, the special regulatory areas from the majority of BLM administered land. Given that this area is managed differently than the following three other areas, and that it has different management objectives, we split this area out retroactively. Here we assess the location of the plots from the original sample design, and assign them to this area, and determine the weights of plots under the scenario that all plots were sampled, and under the realized condition that only certain plots were sampled. 
+
+\begin{wrapfigure}{l}{0.5\textwidth}
+  \centering
+    \includegraphics[width=0.5\textwidth]{../graphics/maps/AIMPlots.png}
+  \caption{All plots sampled across the entirety of the field office}
+\end{wrapfigure}
 
 ```{r Adjust the Sample Point Weights across entire Field Office}
 
@@ -277,7 +288,7 @@ wsAcec_OriginalWeights %>%
   ungroup() %>% 
   select(Stratum, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 
+               col.names = c('Stratum', 'Area (acres)', 'Prop. Area', 
                              'Prop. Site', 'No. Plots', 'Plot Wt.'),
                caption = "Original Sample Design for Areas of Critical Environmental Concern and Wilderness Study Areas", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
@@ -385,7 +396,7 @@ OW_deNM %>%
   ungroup() %>% 
   select(Stratum, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 
+               col.names = c('Stratum', 'Area (acres)', 'Prop. Area', 
                              'Prop. Site', 'No. Plots', 'Plot Wt.'),
                caption = "Original Sample Design for Dominguez-Escalante National Monument", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
@@ -440,8 +451,13 @@ GG_NM_pts <- GG_NM[[1]]
 GG_NM <- GG_NM[[2]]
 ```
 
+\begin{wrapfigure}{l}{0.5\textwidth}
+  \centering
+    \includegraphics[width=0.5\textwidth]{../graphics/maps/GunnisonGorgeAIMPlots.png}
+  \caption{All plots sampled in the vicinity of the National Conservation Area}
+\end{wrapfigure}
 
-The Gunnison Gorge National Monument encompasses `r ggarea` acres, and contains only a few of the strata types covered in the design. It is the only sub-unit of the AIM sample design which is comprised primarily of salt desert, which is featured prominently along the Western portions of it. It also contains significant portion of Pinon-Juniper, adjacent to the cliffs overlooking the gorge, and some of the Target Frames best Sagebrush-Steppe along the Eastern portions. The area features only trace amount of `r NoStrata(GG_deNM)` of the original strata, resulting in them being devoid of any plots in the original draw. There were `r MinStrata(GG_deNM)` strata only present in minor amounts which had fewer than five plots drawn
+The Gunnison Gorge National Monument encompasses `r ggarea` acres, and contains only a few of the strata types covered in the design. It is the only sub-unit of the AIM sample design which is comprised primarily of salt desert, which is featured prominently along the Western portions of it. It also contains significant portion of Pinon-Juniper, adjacent to the cliffs overlooking the gorge, and some of the field offices best Sagebrush-Steppe along the Eastern portions. The area features only trace amount of `r NoStrata(GG_NM)` of the original strata, resulting in them being devoid of any plots in the original draw. There were `r MinStrata(GG_NM)` strata only present in minor amounts which had fewer than five plots drawn
 
 ```{r Original Point Weights for Gunnison Gorge NCA}
 
@@ -452,7 +468,7 @@ GG_NM %>%
   ungroup() %>% 
   select(Stratum, Acres, PropArea, PropTarget, DesiredSS, ApproxStWgt) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
-               col.names = c('Stratum', 'Total Area (acres)', 'Prop. Area', 
+               col.names = c('Stratum', 'Area (acres)', 'Prop. Area', 
                              'Prop. Site', 'No. Plots', 'Plot Wt.'),
                caption = "Original Sample Design for Gunnison Gorge National Monument", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) 
@@ -460,10 +476,7 @@ GG_NM %>%
 rm(deSS, lookup_table, monuments, strat_raster, GGnm)
 ```
  
-```{r GG map,  fig.cap = "All plots sampled in the vicinity of the National Conservation Area"}
-knitr::include_graphics('../graphics/maps/GunnisonGorgeAIMPlots.png')
-```
-
+ 
 
 ```{r Final Points Weights for Gunnison Gorge NCA}
 
@@ -486,10 +499,10 @@ NewWeights_results <- bind_rows(NewWeights_results, GG_newWghts %>%
 points <- points %>% 
   mutate(AoInference = if_else(Plot.ID %in% GG_NM_pts$Plot.ID, 'GG-NM', AoInference)) 
 
-rm(pts, GG_newWghts, ggarea, GG_NM)
+rm(pts, GG_newWghts, ggarea)
 ```
 
-Of the `r drawnStrata(GG_deNM)` strata which had plots drawn within the monument, only `r SampledStrata(GG_deNM)` were successfully sampled. The Pinon-Juniper stratum, representing 29% of the area, only had one point sampled, accordingly no temporal analyses can be performed using this stratum. However, both the Salt Desert and Sagebrush-Steppe stratum, which compose roughly 55% of the monument, had enough plots sampled for temporal analyses. ...
+Of the `r drawnStrata(GG_NM)` strata which had plots drawn within the monument, only `r SampledStrata(GG_NM)` were successfully sampled. The Pinon-Juniper stratum, representing 29% of the area, only had one point sampled, accordingly no temporal analyses can be performed using this stratum. However, both the Salt Desert and Sagebrush-Steppe stratum, which compose roughly 55% of the monument, had enough plots sampled for temporal analyses. ...
 
 ```{r write out results, eval = F}
 
@@ -507,10 +520,11 @@ rm(OriginalWeights_results, NewWeights_results, points, p)
 ```
 
 ```{r}
-rm(OriginalWeights_results, NewWeights_results, points, originalWeights, plotWeigher, GG_deNM)
+rm(OriginalWeights_results, NewWeights_results, points, originalWeights, plotWeigher, GG_NM)
 ```
 
-\newpage
+
+\newpage 
 
 ### Summary of Plot Sampling Efforts
 

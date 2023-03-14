@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2023.2.26)  13 MAR 2023 16:18
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2023.2.26)  14 MAR 2023 16:22
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -577,60 +577,62 @@ File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 <../graphics/maps/AIMPlots.png, id=35, 419.166pt x 344.9688pt>
 File: ../graphics/maps/AIMPlots.png Graphic file (type png)
 <use ../graphics/maps/AIMPlots.png>
-Package pdftex.def Info: ../graphics/maps/AIMPlots.png  used on input line 280.
-(pdftex.def)             Requested size: 234.87846pt x 193.30226pt.
-[2]
+Package pdftex.def Info: ../graphics/maps/AIMPlots.png  used on input line 267.
+(pdftex.def)             Requested size: 187.9002pt x 154.63971pt.
 
-Package wrapfig Warning: Stationary wrapfigure forced to float on input line 310.
-
-
-Package wrapfig Warning: Stationary wrapfigure forced to float on input line 313.
-
-[3]
-Underfull \hbox (badness 1237) in paragraph at lines 323--324
-[] []\T1/lmr/bx/n/10 Areas of Crit-i-cal En-vi-ron-men-tal Con-cern
- []
+Package wrapfig Warning: Stationary wrapfigure forced to float on input line 272.
 
 
-Underfull \hbox (badness 4872) in paragraph at lines 323--324
-\T1/lmr/bx/n/10 (ACEC's) and Wilder-ness Study Ar-eas
- []
+Package wrapfig Warning: Stationary wrapfigure forced to float on input line 275.
 
-[4 <../graphics/maps/AIMPlots.png>] [5]
+[2] [3 <../graphics/maps/AIMPlots.png>]
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[4] [5]
 <../graphics/maps/DominguezEscalenteAIMPlots.png, id=65, 289.08pt x 257.0403pt>
 File: ../graphics/maps/DominguezEscalenteAIMPlots.png Graphic file (type png)
 <use ../graphics/maps/DominguezEscalenteAIMPlots.png>
-Package pdftex.def Info: ../graphics/maps/DominguezEscalenteAIMPlots.png  used on input line 454.
-(pdftex.def)             Requested size: 289.0881pt x 257.04752pt.
+Package pdftex.def Info: ../graphics/maps/DominguezEscalenteAIMPlots.png  used on input line 512.
+(pdftex.def)             Requested size: 234.8769pt x 208.84473pt.
 [6 <../graphics/maps/DominguezEscalenteAIMPlots.png>]
-<../graphics/maps/GunnisonGorgeAIMPlots.png, id=75, 289.08pt x 338.4645pt>
+
+Package wrapfig Warning: Collision between wrapping environments on input line 549.
+
+<../graphics/maps/GunnisonGorgeAIMPlots.png, id=76, 289.08pt x 338.4645pt>
 File: ../graphics/maps/GunnisonGorgeAIMPlots.png Graphic file (type png)
 <use ../graphics/maps/GunnisonGorgeAIMPlots.png>
-Package pdftex.def Info: ../graphics/maps/GunnisonGorgeAIMPlots.png  used on input line 492.
+Package pdftex.def Info: ../graphics/maps/GunnisonGorgeAIMPlots.png  used on input line 551.
 (pdftex.def)             Requested size: 234.8769pt x 275.00172pt.
-[7 <../graphics/maps/GunnisonGorgeAIMPlots.png>] [8]
-<get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf, id=92, 469.755pt x 272.01625pt>
+
+Package wrapfig Warning: Stationary wrapfigure forced to float on input line 555.
+
+
+Package wrapfig Warning: Stationary wrapfigure forced to float on input line 606.
+
+[7]
+<get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf, id=86, 469.755pt x 307.1475pt>
 File: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf Graphic file (type pdf)
 <use get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf>
-Package pdftex.def Info: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf  used on input line 565.
-(pdftex.def)             Requested size: 469.75386pt x 272.01558pt.
-[9 <./get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf>] (./get_initial_weights.aux)
+Package pdftex.def Info: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf  used on input line 624.
+(pdftex.def)             Requested size: 469.75386pt x 307.14674pt.
+[8 <../graphics/maps/GunnisonGorgeAIMPlots.png> <./get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf>] (./get_initial_weights.aux)
 Package rerunfilecheck Info: File `get_initial_weights.out' has not changed.
 (rerunfilecheck)             Checksum: C68C723D31AC3566F8613A9C06EC0BBB;921.
  ) 
 Here is how much of TeX's memory you used:
- 13633 strings out of 477984
- 222291 string characters out of 5838807
+ 13626 strings out of 477984
+ 222095 string characters out of 5838807
  1870388 words of memory out of 5000000
- 33543 multiletter control sequences out of 15000+600000
+ 33537 multiletter control sequences out of 15000+600000
  556309 words of font info for 71 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 75i,9n,76p,413b,464s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,9n,76p,413b,453s stack positions out of 10000i,1000n,20000p,200000b,200000s
 {/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}</home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi7.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr17.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmri10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb>
-Output written on get_initial_weights.pdf (9 pages, 2929757 bytes).
+Output written on get_initial_weights.pdf (8 pages, 2933292 bytes).
 PDF statistics:
- 165 PDF objects out of 1000 (max. 8388607)
- 125 compressed objects within 2 object streams
- 37 named destinations out of 1000 (max. 500000)
+ 158 PDF objects out of 1000 (max. 8388607)
+ 119 compressed objects within 2 object streams
+ 36 named destinations out of 1000 (max. 500000)
  53 words of extra memory for PDF output out of 10000 (max. 10000000)
 

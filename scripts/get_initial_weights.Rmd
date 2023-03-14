@@ -72,7 +72,7 @@ acres per plot, which it represents.
 
 ### Areas of Analysis
 
-The original AIM design covers the entire target frame of the UFO field office. However, a few additional analytical and management sub-units exist within this extent. There are three planning areas each with their own management objectives. The two National Monuments associated with the UFO - the Gunnison Gorge & Dominguez-Escalente - the latter of which is partially administered by the Grand Junction Field Office (GJFO), are associated with their own Planning Areas. Likewise both within those, and across the Field office, there are numerous Wilderness Study Areas (WSA's), and Area's of critical Environmental Concern (ACEC's). As discussed later, the UFO intends these areas to have higher proportions of certain vegetation metrics relative to the remainder of BLM land. 
+The original AIM design covers the entire target frame of the UFO field office. However, a few additional analytical and management sub-units exist within this extent. There are three planning areas each with their own management objectives. The two National Conservation Areas associated with the UFO - the Gunnison Gorge & Dominguez-Escalente - the latter of which is partially administered by the Grand Junction Field Office (GJFO), are associated with their own Planning Areas. Likewise both within those, and across the Field office, there are numerous Wilderness Study Areas (WSA's), and Area's of critical Environmental Concern (ACEC's). As discussed later, the UFO intends these areas to have higher proportions of certain vegetation metrics relative to the remainder of BLM land. 
 
 The Uncompahgre Resource Management Plan, completed in June 2019 covers 675,800 acres of the field office, and provides the definitive source of management objectives for the Field Office (summarized in VEG-OBJ-01 in Section II p. 23):
 
@@ -201,13 +201,17 @@ rm(r, plot_summary)
 
 ## All land, less species status
 
-The majority of land administered by the field office does not fall under any special regulatory status, such as those for the ACEC's and National Conservation Areas. The initial AIM sample design covered the entirety of the Field Office, and did not separate out, or weigh, the special regulatory areas from the majority of BLM administered land. Given that this area is managed differently than the following three other areas, and that it has different management objectives, we split this area out retroactively. Here we assess the location of the plots from the original sample design, and assign them to this area, and determine the weights of plots under the scenario that all plots were sampled, and under the realized condition that only certain plots were sampled. 
-
-\begin{wrapfigure}{l}{0.5\textwidth}
+\begin{wrapfigure}{l}{0.4\textwidth}
   \centering
-    \includegraphics[width=0.5\textwidth]{../graphics/maps/AIMPlots.png}
+    \includegraphics[width=0.4\textwidth]{../graphics/maps/AIMPlots.png}
   \caption{All plots sampled across the entirety of the field office}
 \end{wrapfigure}
+
+> "*greater than 70 percent of vegetation communities on (the remaining) BLM-administered lands*"
+> 
+> `r tufte::quote_footer('--- RMP 2019')`
+
+The majority of land administered by the field office does not fall under any special regulatory status, such as those which are present for the Areas of Critical Environmental Concern (ACEC's), Wilderness [Study] Areas, and National Conservation Areas. The initial AIM sample design covered the entirety of the Field Office, and did not separate out, or weigh, the special regulatory areas from the majority of BLM administered land. However, given that this area is managed differently than the following three other areas, and that it has different management objectives with more tolerance to certain kinds of uses, we split this area out retroactively. Here we assess the location of the AIM plots drawn in the original sample design, and using spatial techniques assign them to this area. We then determine the weights of plots under the scenario that all plots were sampled (Table 1), and under the realized condition that only certain plots were sampled (Table 2). Generally, we would only be performing the second action at the end of the sampling.
 
 ```{r Adjust the Sample Point Weights across entire Field Office}
 
@@ -222,7 +226,8 @@ Full_newWghts %>%
                col.names = c('Stratum',  'Plot Wt.', 'Plot Wt. Ac.', 'Sampled', 'Rejected'),
                caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2))
+  kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2)) %>% 
+  kableExtra::kable_styling(latex_options = "hold_position")
 
 OriginalWeights_results <- mutate(OriginalWeights, 'Area' = 'SampleFrame') %>% 
   select(-any_of(c('StratumName')))
@@ -232,19 +237,17 @@ NewWeights_results <- mutate(Full_newWghts, 'Area' = 'SampleFrame') %>%
 rm(OriginalWeights, Full_newWghts)
 ```
 
-> "*greater than 70 percent of vegetation communities on (the remaining) BLM-administered lands*"
-> 
-> `r tufte::quote_footer('--- RMP 2019')`
 
-\newpage
+The strata of Mixed Conifer and Aspen, both had fewer plots sampled than the sample design called for. Both of these areas are relatively rare across the field office, and accordingly had very few initial plots drawn for each of them. The inability to sample these is due to several of the drawn base points and over sample plots being located on parcels of land, which required permission from private land owners to access, but which were denied; or were on areas with very high slopes, which were unsafe to sample. While we are able to use these plot weights to infer across the field office on the whole, we note that a discrepancy existed between the actual distribution of these areas in the office and the plots classified as such **SECTION XX**. While we regret not being able to sample these plots, most of the drawn locations were actually in Mixed Mountain Shrub, an area which was weighed to have extra plots and which was successfully sampled.
+
+Aside from these two strata, all other strata had more plots sampled than expected. Because the area of inference which these plots speak to cannot change, the weight of each individual plot decreases in this scenario. In simpler terms, each plot represents a smaller unit of area. In the case of the Mixed Conifer and Aspend plots, each plot represents more area than intended.
 
 ####  Areas of Critical Environmental Concern (ACEC's) and Wilderness Study Areas (WSA)
 
-
 ```{r Original Point weights for ACEC and WSA}
 
-spatial_products <- '/media/sagesteppe/ExternalHD/UFO_cartography'
-design_rast <- '/media/sagesteppe/ExternalHD/UFO_AIM_Design_Stratification/processed'
+spatial_products <- '../../UFO_cartography'
+design_rast <- '../../UFO_AIM_Design_Stratification/processed'
 lookup_table <- read.csv(file.path(design_rast, 'UFO_strata_areas.csv')) %>% 
   select(RasterValue, Code)
 
@@ -255,12 +258,13 @@ acecs <- st_read(file.path(spatial_products, 'BLM_CO_ACEC/acec_desig_poly.shp'),
                  quiet = T) %>%  
   st_intersection(uFO, .) %>% 
   select(NAME = ACEC_NAME) %>% 
-  mutate(TYPE = 'ACEC')
+  mutate(TYPE = 'ACEC',  .before = geometry)  %>% 
+  filter(NAME != 'Sinbad Valley ACEC')
 wsa <- st_read(file.path(spatial_products, 'BLM_CO_WSA/nlcs_wsa_poly.shp'), 
                quiet = T) %>% 
   st_intersection(uFO, .) %>% 
   select(NAME = NLCS_NAME) %>% 
-  mutate(TYPE = 'WSA')
+  mutate(TYPE = 'WSA', .before = geometry)
 
 wsAcec <- bind_rows(acecs, wsa) %>% 
   mutate(ID = 1:n(), .before = 1)
@@ -271,14 +275,7 @@ wsAcec_pts <- wsAcec_OriginalWeights[[1]] # we return a list with the points nee
 wsAcec_OriginalWeights <- wsAcec_OriginalWeights[[2]]
 ```
 
-The Uncompahgre Field office has `r nrow(acecs)` ACEC's.
-
-The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. Loosely, they are intended to have a higher percentage of the vegetation communities within the natural range of variation: 
-
-> "*greater than 80 percent of vegetation communities in ACEC's, WSA's...*" 
-> `r tufte::quote_footer('--- RMP 2019')`
-
-These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of plots in the region. As our sample design was initiated and completed during a period of drought (See...), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
+The Uncompahgre Field office has `r length(unique(acecs$NAME))` unique Areas of Critical Environmental Concern. The focus of these areas range from Archaeological, through sections of Rivers, to rare plant localities. In addition the field office has two additional Wilderness Study Areas, both associated with National Conservation Areas, but which are included in these analyses.
 
 ```{r wsAcec original weights table}
 wsAcec_OriginalWeights %>% 
@@ -291,39 +288,50 @@ wsAcec_OriginalWeights %>%
                col.names = c('Stratum', 'Area (acres)', 'Prop. Area', 
                              'Prop. Site', 'No. Plots', 'Plot Wt.'),
                caption = "Original Sample Design for Areas of Critical Environmental Concern and Wilderness Study Areas", 
-               align = c("c", rep('r', times = (ncol(.) - 1)))) 
+               align = c("c", rep('r', times = (ncol(.) - 1))))  %>% 
+  kableExtra::kable_styling(latex_options = "hold_position")
 
-rm(raster_cells, wsaSpat, wsAcec, wsAcec_area_summary, wsAcec_pt_draw,
+rm(raster_cells, wsaSpat, wsAcec_area_summary, wsAcec_pt_draw,
    base_wsAcec_pts, raster_cells, wsAcec_areas, design_rast)
 ```
 
-Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
+The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wilderness Study Areas (WSA), have different management objectives relative to the remaining BLM administered surface area. Loosely, they are intended to have a higher percentage of the vegetation communities within the natural range of variation: 
+
+> "*greater than 80 percent of vegetation communities in ACEC's, WSA's...*" 
+> `r tufte::quote_footer('--- RMP 2019')`
+
+These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of plots in the region. As our sample design was initiated and completed during a period of drought (**SECTION** 5), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
+
+Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period.
 
 ```{r acec wsa table}
 
 acecs <- acecs %>% group_by(NAME) %>% 
-  summarize(geometry = st_union(geometry)) %>% 
-  filter(NAME != 'Sinbad Valley ACEC')
+  summarize(geometry = st_union(geometry))
 
 acec_pts <- st_intersection(st_transform(wsAcec_pts, st_crs(acecs)) , acecs) %>% 
   group_by(NAME) 
 
-acec_pts_rejected <- acec_pts %>% 
-  filter(!str_detect(Panel, 'versample'), Plot.Status == 'not_sampled') %>% 
-  add_count(name = 'plots_rejected') %>% 
-  select(NAME, plots_rejected) %>% 
+acec_bp_drawn <- acec_pts %>% 
+  filter(str_detect(Panel, 'Sample', negate = T)) %>% 
+  group_by(NAME) %>% 
+  count(name = 'total_plots') %>% 
   st_drop_geometry()
 
 acec_pts_sampled <- acec_pts %>% 
-  filter(!str_detect(Panel, 'versample')) %>% 
-  add_count(name = 'total_plots') %>% 
-  select(NAME, total_plots) %>% 
-  left_join(., acec_pts_rejected, by = 'NAME') %>% 
+  filter(Plot.Status == 'sampled') %>% 
+  group_by(NAME) %>% 
+  count(name = 'sampled') %>% 
   st_drop_geometry() %>% 
+  
+  left_join(., acec_bp_drawn, by = 'NAME') %>% 
   right_join(., acecs , by = 'NAME') %>% 
-  select(NAME, total_plots, plots_rejected) %>% 
+  
+  st_drop_geometry() %>% 
+  select(NAME, total_plots, sampled) %>% 
   distinct() %>% 
-  mutate(across(where(is.numeric), ~ replace_na(.x, 0)))
+  mutate(across(where(is.numeric), ~ replace_na(.x, 0))) %>% 
+  filter(total_plots > 0)
 
 # wsa <- wsa %>% group_by(NAME) %>% 
 #  summarize(geometry = st_union(geometry)) # wsa are off. 
@@ -333,14 +341,19 @@ acecs %>%
   st_drop_geometry() %>% 
   arrange(-Area) %>% 
   left_join(., acec_pts_sampled)  %>% 
+  mutate(across(where(is.numeric), ~ replace_na(.x, 0))) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
                col.names = c('Name', 'Area (ac.)', 'Drawn', 'Sampled'),
                              caption = "Number of Plots Drawn per ACEC",               
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" ", "", "No. Plots" = 2)) 
+  kableExtra::add_header_above(., c(" ", "", "No. Plots" = 2)) %>% 
+  kableExtra::kable_styling(latex_options = "hold_position")
 
 ```
 
+As can be seen in table 4, not every Area of Critical Environmental Concern was able to have an AIM plot located in it. Roughly only half of them had an AIM plot located in them. This is due to them being relatively small in size, the number of AIM plots being relatively few. An alternative AIM sample design, for one of the frames, may require the placement of a plot into each of these individual areas in order to determine long term trends in them. This would allow for determining whether passive management actions in these areas were achieving goals. 
+
+Two of the ACEC's which had AIM plots located in them, Adobe Badlands and San Miguel River, did not have as many plots sampled within them as the sample design called for. In both instances this is most likely due to the plots being on hill slopes which were unsafe to sample. However, oversample plots were sampled in other ACEC units, leading to an appropriate number of plots being sampled across the entire area.
 
 ```{r Final Point weights for ACEC and WSA}
 wsAcec_newWghts <- plotWeigher(wsAcec_OriginalWeights, wsAcec_pts)
@@ -352,9 +365,10 @@ wsAcec_newWghts %>%
   select(Stratum, WghtPerPlot, WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
                col.names = c('Stratum',  'Plot Wt.', 'Plot Wt. Ac.', 'Sampled', 'Rejected'),
-               caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
+               caption = "Realized Weighted Sample Design for the ACEC-WSA", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2))
+  kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2)) %>% 
+  kableExtra::kable_styling(latex_options = "hold_position")
 
 OriginalWeights_results <- bind_rows(OriginalWeights_results, wsAcec_OriginalWeights %>% 
                                        mutate('Area' = 'ACEC-WSA'))
@@ -368,9 +382,13 @@ points <- pts %>%
 rm(wsAcec_OriginalWeights, wsAcec_pts, wsAcec_newWghts)
 ```
 
+More AIM plots in Mixed-Mountain Shrub and Pinyon-Juniper were sampled than drawn in the sample design. Accordingly, these plots are weighted to speak to lower amounts of area than initially noted in the sample design. Fewer Sagebrush plots were sampled than intended, and the weight of the sample plots has been increased to compensate for the deficit.
+
 \newpage
 
-#### Dominguez-Escalente National Monument
+#### Dominguez-Escalente National Conservation Area
+
+The Dominguez-Escalente National Conservation Area is joint administered with the Grand Junction Field Office, all values here refer only to the portions administered by the UFO field office. As mentioned previously, any lands within Wilderness Study Areas within the National Conservation Areas are included with the ACEC-WSA strata.
 
 ```{r Original Point weights for Dominguez-Escalente NM}
 
@@ -385,6 +403,9 @@ monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly
 DEnm <- monuments %>% filter(str_detect(NAME, 'Dominguez')) %>% 
   mutate(ID = 1:n(), .before = 1, TYPE = 'NM')
 
+total_area <- round(as.numeric(measurements::conv_unit(st_area(DEnm), "m2", "acre")))
+dearea <- TArea(DEnm)
+
 OW_deNM <- originalWeights(DEnm, strat_raster, pts)
 OW_deNM_pts <- OW_deNM[[1]]
 OW_deNM <- OW_deNM[[2]]
@@ -398,17 +419,25 @@ OW_deNM %>%
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
                col.names = c('Stratum', 'Area (acres)', 'Prop. Area', 
                              'Prop. Site', 'No. Plots', 'Plot Wt.'),
-               caption = "Original Sample Design for Dominguez-Escalante National Monument", 
-               align = c("c", rep('r', times = (ncol(.) - 1)))) 
+               caption = "Original Sample Design for Dominguez-Escalante NCA", 
+               align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
+  kableExtra::kable_styling(latex_options = "hold_position")
+
+DEnm_only <- st_difference(DEnm, st_union(wsAcec))
+total_area <- round(as.numeric(measurements::conv_unit(st_area(DEnm_only), "m2", "acre"))) 
+de_only <- TArea(DEnm_only)
 
 rm(uFO, p2d, DEnm, spatial_products)
 ```
 
+\begin{wrapfigure}{l}{0.5\textwidth}
+  \centering
+    \includegraphics[width=0.5\textwidth]{../graphics/maps/DominguezEscalenteAIMPlots.png}
+  \caption{All plots sampled in the vicinity of the National Conservation Area, by both the UFO and Grand Junction Field Office. The GJFO is North (towards the top of the page) of the black line running across the map.}
+\end{wrapfigure}
 
-```{r DE map,  fig.cap = "All plots sampled in the vicinity of the National Conservation Area, by both the UFO and Grand Junction Field Office. The GJFO is North (towards the top of the page) of the black line running across the map."}
-knitr::include_graphics('../graphics/maps/DominguezEscalenteAIMPlots.png')
-```
-
+ The total area of the Monument which is administered by the Uncompahgre Field Office is roughly `r dearea` acres. However due to the large WSA within it, and assorted ACEC's the total area is reduced to only `r de_only` acres...
+ 
 Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
 
 ```{r Final Point Weights for Dominguez-Escalente NCA}
@@ -421,7 +450,7 @@ OW_newWghts %>%
   select(Stratum, WghtPerPlot, WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
                col.names = c('Stratum',  'Plot Wt.', 'Plot Wt. Ac.', 'Sampled', 'Rejected'),
-               caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
+               caption = "Realized Weighted Sample Design for Dominguez-Escalente", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
   kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2))
 
@@ -432,12 +461,12 @@ NewWeights_results <- bind_rows(NewWeights_results, OW_newWghts %>%
 points <- points %>% 
   mutate(AoInference = if_else(Plot.ID %in% OW_deNM_pts$Plot.ID, 'DE-NM', AoInference))
 
-rm(OW_deNM, OW_newWghts)
+rm(OW_deNM, OW_newWghtsm, de_only, dearea)
 ```
 
 \newpage
 
-#### Gunnison Gorge National Monument
+#### Gunnison Gorge National Conservation Area
 
 ```{r Gunnison Gorge area, results = 'hide'}
 GGnm <- monuments %>% filter(str_detect(NAME, 'Gunnison')) %>% 
@@ -445,6 +474,14 @@ GGnm <- monuments %>% filter(str_detect(NAME, 'Gunnison')) %>%
 
 total_area <- round(as.numeric(measurements::conv_unit(st_area(GGnm), "m2", "acre"))) # mismatch because the NA
 ggarea <- TArea(GGnm)
+
+GGnm_only <- st_difference(GGnm, st_union(wsAcec))
+total_area <- round(as.numeric(measurements::conv_unit(st_area(GGnm_only), "m2", "acre"))) 
+gg_only <- TArea(GGnm_only)
+
+ggplot() +
+  geom_sf(data = GGnm, fill = 'red') +
+  geom_sf(data = GGnm_only, fill = 'yellow', alpha = 0.5) 
 
 GG_NM <- originalWeights(GGnm, strat_raster, pts)
 GG_NM_pts <- GG_NM[[1]]
@@ -457,7 +494,7 @@ GG_NM <- GG_NM[[2]]
   \caption{All plots sampled in the vicinity of the National Conservation Area}
 \end{wrapfigure}
 
-The Gunnison Gorge National Monument encompasses `r ggarea` acres, and contains only a few of the strata types covered in the design. It is the only sub-unit of the AIM sample design which is comprised primarily of salt desert, which is featured prominently along the Western portions of it. It also contains significant portion of Pinon-Juniper, adjacent to the cliffs overlooking the gorge, and some of the field offices best Sagebrush-Steppe along the Eastern portions. The area features only trace amount of `r NoStrata(GG_NM)` of the original strata, resulting in them being devoid of any plots in the original draw. There were `r MinStrata(GG_NM)` strata only present in minor amounts which had fewer than five plots drawn
+The Gunnison Gorge National Conservation Area encompasses `r ggarea` acres, and contains only a few of the strata types covered in the design. It is the only sub-unit of the AIM sample design which is comprised primarily of salt desert, which is featured prominently along the Western portions of it. It also contains significant portion of Pinon-Juniper, adjacent to the cliffs overlooking the gorge, and some of the field offices best Sagebrush-Steppe along the Eastern portions. The area features only trace amount of `r NoStrata(GG_NM)` of the original strata, resulting in them being devoid of any plots in the original draw. There were `r MinStrata(GG_NM)` strata only present in minor amounts which had fewer than five plots drawn
 
 ```{r Original Point Weights for Gunnison Gorge NCA}
 
@@ -470,8 +507,9 @@ GG_NM %>%
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
                col.names = c('Stratum', 'Area (acres)', 'Prop. Area', 
                              'Prop. Site', 'No. Plots', 'Plot Wt.'),
-               caption = "Original Sample Design for Gunnison Gorge National Monument", 
-               align = c("c", rep('r', times = (ncol(.) - 1)))) 
+               caption = "Original Sample Design for Gunnison Gorge NCA", 
+               align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
+  kableExtra::kable_styling(latex_options = "hold_position")
 
 rm(deSS, lookup_table, monuments, strat_raster, GGnm)
 ```
@@ -502,7 +540,7 @@ points <- points %>%
 rm(pts, GG_newWghts, ggarea)
 ```
 
-Of the `r drawnStrata(GG_NM)` strata which had plots drawn within the monument, only `r SampledStrata(GG_NM)` were successfully sampled. The Pinon-Juniper stratum, representing 29% of the area, only had one point sampled, accordingly no temporal analyses can be performed using this stratum. However, both the Salt Desert and Sagebrush-Steppe stratum, which compose roughly 55% of the monument, had enough plots sampled for temporal analyses. ...
+Of the `r drawnStrata(GG_NM)` strata which had plots drawn within the NCA, only `r SampledStrata(GG_NM)` were successfully sampled. The Pinon-Juniper stratum, representing 29% of the area, only had one point sampled, accordingly no temporal analyses can be performed using this stratum. However, both the Salt Desert and Sagebrush-Steppe stratum, which compose roughly 55% of the NCA, had enough plots sampled for temporal analyses. ...
 
 ```{r write out results, eval = F}
 
@@ -530,7 +568,7 @@ rm(OriginalWeights_results, NewWeights_results, points, originalWeights, plotWei
 
 No clear biases existed in the success of plot sampling efforts with the exception of Mixed Conifer plots. 
 
-```{r Alluvial tracking plot status, warning = F, fig.height = 4, fig.weight = 4, fig.cap = 'Fates of all potential AIM plots from the Sample Design'}
+```{r Alluvial tracking plot status, warning = F, fig.cap = 'Fates of all potential AIM plots from the Sample Design'}
 
 ps <- plot_status %>% 
   filter(str_detect(Panel, 'OverSample', negate = T)) %>% 

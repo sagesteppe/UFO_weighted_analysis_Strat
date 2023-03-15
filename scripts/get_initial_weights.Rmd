@@ -500,7 +500,7 @@ points <- points %>%
 rm(OW_deNM, OW_newWghtsm, de_only, dearea, acecs_de, deNM)
 ```
 
-The three plots drawn in the Aspen and Mixed Conifer strata were unable to be sampled, as mentioned due to the isolated and difficult topography of portions of the NCA. One plot fewer than desired in the drawn Sagebrush stratum was sampled, however more plots than expected were sampled in the Pinyon-Juniper and Salt Desert strata.
+The three plots drawn in the Aspen and Mixed Conifer strata were unable to be sampled, as mentioned due to the isolated and difficult topography of portions of the NCA. One plot fewer than desired in the drawn Sagebrush stratum was sampled, however more plots than expected were sampled in the Pinyon-Juniper and Salt Desert strata. Many of the over samples for 'Other', a stratum which was created by pooling many uncommon vegetation strata, were located in the Monument, but where not sampled. Many of these were located on escarpments. 
 
 \newpage
 
@@ -510,28 +510,17 @@ The three plots drawn in the Aspen and Mixed Conifer strata were unable to be sa
 GGnm <- monuments %>% filter(str_detect(NAME, 'Gunnison')) %>% 
   mutate(ID = 1:n(), .before = 1, TYPE = 'NM')
 
-total_area <- round(as.numeric(measurements::conv_unit(st_area(GGnm), "m2", "acre"))) # mismatch because the NA
-ggarea <- TArea(GGnm)
-
-GGnm_only <- st_difference(GGnm, st_union(wsAcec))
-total_area <- round(as.numeric(measurements::conv_unit(st_area(GGnm_only), "m2", "acre"))) 
-gg_only <- TArea(GGnm_only)
-
 GG_NM <- originalWeights(GGnm, strat_raster, pts)
 GG_NM_pts <- GG_NM[[1]]
 GG_NM <- GG_NM[[2]]
+
+gg <- filter(wa, NAME == 'Gunnison Gorge') %>% st_union()
+gg_grouse <- filter(acecs, NAME == 'Gunnison Sage-Grouse IBA') %>% 
+  st_intersection(GGnm, .) %>% 
+  st_collection_extract('POLYGON') %>% 
+  st_union()
+
 ```
-
-\begin{wrapfigure}{l}{0.5\textwidth}
-  \centering
-    \includegraphics[width=0.5\textwidth]{../graphics/maps/GunnisonGorgeAIMPlots.png}
-  \caption{All plots sampled in the vicinity of the National Conservation Area}
-\end{wrapfigure}
-
-The Gunnison Gorge National Conservation Area encompasses `r ggarea` acres, and contains only a few of the strata types covered in the design. It is the only sub-unit of the AIM sample design which is comprised primarily of salt desert, which is featured prominently along the Western portions of it. It also contains significant portion of Pinon-Juniper, adjacent to the cliffs overlooking the gorge, and some of the field offices best Sagebrush-Steppe along the Eastern portions. The area features only trace amount of `r NoStrata(GG_NM)` of the original strata, resulting in them being devoid of any plots in the original draw. There were `r MinStrata(GG_NM)` strata only present in minor amounts which had fewer than five plots drawn
-
-
-Native Plant Community ONA  - SURROUNDED BY GG
 
 ```{r Original Point Weights for Gunnison Gorge NCA}
 
@@ -548,10 +537,19 @@ GG_NM %>%
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
   kableExtra::kable_styling(latex_options = "hold_position")
 
-rm(deSS, lookup_table, monuments, strat_raster, GGnm)
+rm(deSS, lookup_table, monuments, strat_raster)
 ```
- 
- 
+
+\begin{wrapfigure}{l}{0.4\textwidth}
+  \centering
+    \includegraphics[width=0.4\textwidth]{../graphics/maps/GunnisonGorgeAIMPlots.png}
+  \caption{All plots sampled in the vicinity of the National Conservation Area}
+\end{wrapfigure}
+
+The Gunnison Gorge National Conservation Area encompasses `r TArea(GGnm)` acres, and runs along the Gunnison River downstream of the Black-Canyon of the Gunnison National Park. Despite the enormity of the gorge, this area does not have significant topographic differences as are found on larger parcels of land, and as a result features only `r NoStrata(GG_NM)` of the original vegetation strata in the design. It is the only sub-unit of the AIM sample design which is comprised primarily of salt desert, which is featured prominently along the Western portions of it. It also contains significant portion of Pinon-Juniper, adjacent to the cliffs overlooking the gorge, and some of the field offices best Sagebrush-Steppe along the Eastern portions.
+
+As previously mentioned, this NCA contains a wilderness area, and an ACEC. The Native Plant Community ONA which is located along the Western Rim of the gorge is roughly `r TArea( filter(acecs_all, NAME == 'Native Plant Community ONA'))` acres, unfortunately no points were drawn in this area. The Wilderness in the center of the NCA is roughly `r TArea(gg)` acres, and is a very popular rafting destination. Accordingly points which were located in this wilderness proved challenging to sample. A single portion of the 'Gunnison Sage-Grouse IBA', comprising roughly `r TArea(gg_grouse)` acres overlays this NCA, and it is included in analyses of it, despite not having any plots drawn or sampled in it.
+
 ```{r Final Points Weights for Gunnison Gorge NCA}
 
 GG_newWghts <- plotWeigher(GG_NM, GG_NM_pts)
@@ -564,7 +562,8 @@ GG_newWghts %>%
                col.names = c('Stratum',  'Plot Wt.', 'Plot Wt. Ac.', 'Sampled', 'Rejected'),
                caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
-  kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2))
+  kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2)) %>% 
+  kableExtra::kable_styling(latex_options = "hold_position")
 
 OriginalWeights_results <- bind_rows(OriginalWeights_results, GG_NM %>% 
                                        mutate('Area' = 'GG-NM'))
@@ -576,7 +575,7 @@ points <- points %>%
 rm(pts, GG_newWghts, ggarea)
 ```
 
-Of the `r drawnStrata(GG_NM)` strata which had plots drawn within the NCA, only `r SampledStrata(GG_NM)` were successfully sampled. The Pinon-Juniper stratum, representing 29% of the area, only had one point sampled, accordingly no temporal analyses can be performed using this stratum. However, both the Salt Desert and Sagebrush-Steppe stratum, which compose roughly 55% of the NCA, had enough plots sampled for temporal analyses. ...
+Of the `r drawnStrata(GG_NM)` strata which had plots drawn within the NCA, only `r SampledStrata(GG_NM)` were successfully sampled. ...
 
 ```{r write out results, eval = F}
 
@@ -594,7 +593,7 @@ rm(OriginalWeights_results, NewWeights_results, points, p)
 ```
 
 ```{r}
-rm(OriginalWeights_results, NewWeights_results, points, originalWeights, plotWeigher, GG_NM)
+rm(OriginalWeights_results, NewWeights_results, points, originalWeights, plotWeigher, GG_NM, gg)
 ```
 
 
@@ -628,9 +627,9 @@ ggplot(data = ps,
   scale_fill_manual(values = c('forestgreen', '#e71313')) +
   theme_void() +
   theme(legend.position = "none",
-        plot.title = element_text(hjust = 0.5)) +
+        plot.title = element_text(hjust = 0.5)) + 
   ggtitle("Fate of Potential Plots Across the Sample Design") 
-
+ 
 rm(ps, plot_status)
 ```
 

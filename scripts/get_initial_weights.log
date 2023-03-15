@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2023.2.26)  15 MAR 2023 13:56
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2023.2.26)  15 MAR 2023 15:45
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -595,13 +595,13 @@ Package pdftex.def Info: ../graphics/maps/DominguezEscalenteAIMPlots.png  used o
 <../graphics/maps/GunnisonGorgeAIMPlots.png, id=85, 289.08pt x 338.4645pt>
 File: ../graphics/maps/GunnisonGorgeAIMPlots.png Graphic file (type png)
 <use ../graphics/maps/GunnisonGorgeAIMPlots.png>
-Package pdftex.def Info: ../graphics/maps/GunnisonGorgeAIMPlots.png  used on input line 585.
-(pdftex.def)             Requested size: 234.8769pt x 275.00172pt.
+Package pdftex.def Info: ../graphics/maps/GunnisonGorgeAIMPlots.png  used on input line 611.
+(pdftex.def)             Requested size: 187.89977pt x 219.99931pt.
 [7 <../graphics/maps/GunnisonGorgeAIMPlots.png>] [8]
 <get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf, id=101, 469.755pt x 307.1475pt>
 File: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf Graphic file (type pdf)
 <use get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf>
-Package pdftex.def Info: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf  used on input line 660.
+Package pdftex.def Info: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf  used on input line 668.
 (pdftex.def)             Requested size: 469.75386pt x 307.14674pt.
 [9 <./get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf>] (./get_initial_weights.aux)
 Package rerunfilecheck Info: File `get_initial_weights.out' has not changed.
@@ -616,7 +616,7 @@ Here is how much of TeX's memory you used:
  14 hyphenation exceptions out of 8191
  75i,9n,76p,556b,453s stack positions out of 10000i,1000n,20000p,200000b,200000s
 {/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}</home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi7.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr17.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmri10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb>
-Output written on get_initial_weights.pdf (9 pages, 2935566 bytes).
+Output written on get_initial_weights.pdf (9 pages, 2935633 bytes).
 PDF statistics:
  174 PDF objects out of 1000 (max. 8388607)
  134 compressed objects within 2 object streams

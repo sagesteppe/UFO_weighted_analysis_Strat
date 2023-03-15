@@ -24,8 +24,35 @@ knitr::opts_chunk$set(warning = F)
 knitr::opts_chunk$set(fig.pos = 'H')
 ```
 
+```{r Load libraries, warning = F, message = F, echo = F}
+library(tidyverse)
+library(sf)
+library(terra)
+library(spsurvey)
+library(kableExtra)
+library(ggalluvial)
+source('functions.R')
+```
 
-This AIM study was designed with three major principals in mind. The first, was maximizing the number of environments which it represents across the field office. The UFO field office varies by nearly XXXX feet, XXXX average precipitation, XXXX average temperatures, and displays a diversity of environments; and this sample design included this entire range of variation. To ensure that these diverse areas were represented, ten major strata were identified *see table*, in order to ensure that they had plots located in them in order to evaluate their ecological *integrity*. However, the management concerns, actions, and heterogeneity (internal dissimilarity) of these strata differ. To best understand the ecological context of these strata, and what management actions the BLM may take, the proportion of plots were tailored to each stratum. The third principal was that all plots be randomly placed within the stratum, which allows *inference* to be made from plots to the, unsampled, entirety of the stratum. This *weighted sample design* allows us to maximize statistical understanding while minimizing the field effort required to undertake it. Finally, the entire field office was designated as the *sample frame*, i.e. the area of analysis (or a spatially explicit population), which statistical inference can be made to.
+```{r introduction writing materials}
+p2drought <- '../../drought_geospatial'
+dem <- rast(
+  file.path(p2drought, 'dem/EarthEnv-DEM90_N35W110/EarthEnv-DEM90_N35W110.bil'))
+
+spatial_products <- '../../UFO_cartography'
+elevations <- st_read(file.path(spatial_products, 
+                         'BLM_CO_Grazing_Allotments/gra_allot_poly.shp'), quiet = T) %>% 
+  vect() %>% 
+  project(crs(dem)) %>% 
+  extract(dem, .)
+
+min_el <- min(elevations$`EarthEnv-DEM90_N35W110`) * 3.28084
+max_el <- max(elevations$`EarthEnv-DEM90_N35W110`) * 3.28084
+
+rm(p2drought, dem, elevations)
+```
+
+This AIM study was designed with three major principals in mind. The first, was maximizing the number of environments which it represents across the field office. The UFO field office varies by nearly `r round(max_el - min_el, -2)` feet, and displays a diversity of environments associated with this topographic gradient; and this sample design included this entire range of variation. To ensure that these diverse areas were represented, ten major strata were identified (Table 1), in order to ensure that they had plots located in them in order to evaluate their ecological *integrity*. However, the management concerns, actions, and heterogeneity (internal dissimilarity) of these strata differ. To best understand the ecological context of these strata, and what management actions the BLM may take, the proportion of plots were tailored to each stratum. The third principal was that all plots be randomly placed within the stratum, which allows *inference* to be made from plots to the, unsampled, entirety of the stratum. This *weighted sample design* allows us to maximize statistical understanding while minimizing the field effort required to undertake it. Finally, the entire field office was designated as the *sample frame*, i.e. the area of analysis (or a spatially explicit population), which statistical inference can be made to.
 
 The initial sample design followed the general AIM implementation design to contain 255 plots to be sampled across five years. Sampling over a five year period is essential in order to ensure that plots are visited during periods wherein the vegetation is *reproductively active*, hence identifiable. A benefit of this prolonged time frame is that anomalous weather conditions are unlikely to affect the plots across the entire time period. For example, the condition of plots may be compared in a wet year, to a dry year, as referenced from a year with typical rainfall. In order to avoid random unexpected processes which cluster in space which may occur over the period of conducting the sample design, the entire design is split into a *reproductively active* for each year of sampling. Each panel is composed of a subset of randomly selected points within the sample design and avoids missing swathes of the *target frame* during the sample period due to an event such as a prolonged wildfire. 
 
@@ -79,17 +106,9 @@ The Uncompahgre Resource Management Plan, completed in June 2019 covers 675,800 
 > "*Maximize native vegetation and natural processes by ensuring upland vegetation communities are within the range of natural variability, with an appropriate mix of plant functional groups, cover, and diversity, according to best available science on greater than 80 percent of vegetation communities in ACECs, WSAs, suitable WSR segments, and lands managed to minimize impacts on wilderness characteristics and on greater than 70 percent of vegetation communities on the remaining BLM- administered lands, over 10 years with 80 percent confidence.*" 
 > `r tufte::quote_footer('--- RMP 2019')`
 
-```{r Load libraries, warning = F, message = F, echo = F}
-library(tidyverse)
-library(sf)
-library(terra)
-library(spsurvey)
-library(kableExtra)
-library(ggalluvial)
-source('functions.R')
-```
-
 ```{r Import and tidy data}
+
+rm(min_el, max_el)
 p2d <- '../data/raw'
 
 plot_status <- read.csv(file.path(p2d, list.files(path = p2d, pattern = "summary.csv")))  %>% 
@@ -201,9 +220,9 @@ rm(r, plot_summary)
 
 ## All land, less species status
 
-\begin{wrapfigure}{l}{0.4\textwidth}
+\begin{wrapfigure}{l}{0.35\textwidth}
   \centering
-    \includegraphics[width=0.4\textwidth]{../graphics/maps/AIMPlots.png}
+    \includegraphics[width=0.35\textwidth]{../graphics/maps/AIMPlots.png}
   \caption{All plots sampled across the entirety of the field office}
 \end{wrapfigure}
 
@@ -466,9 +485,9 @@ acecs_de <- filter(acecs_all, NAME %in% c('River Rims ACEC', 'Escalante Canyon A
 rm(uFO, p2d, spatial_products)
 ```
 
-\begin{wrapfigure}{l}{0.4\textwidth}
+\begin{wrapfigure}{l}{0.35\textwidth}
   \centering
-    \includegraphics[width=0.4\textwidth]{../graphics/maps/DominguezEscalenteAIMPlots.png}
+    \includegraphics[width=0.35\textwidth]{../graphics/maps/DominguezEscalenteAIMPlots.png}
   \caption{All plots sampled in the vicinity of the National Conservation Area, by both the UFO and Grand Junction Field Office. The GJFO is North (towards the top of the page) of the black line running across the map.}
 \end{wrapfigure}
 
@@ -540,9 +559,9 @@ GG_NM %>%
 rm(deSS, lookup_table, monuments, strat_raster)
 ```
 
-\begin{wrapfigure}{l}{0.4\textwidth}
+\begin{wrapfigure}{l}{0.35\textwidth}
   \centering
-    \includegraphics[width=0.4\textwidth]{../graphics/maps/GunnisonGorgeAIMPlots.png}
+    \includegraphics[width=0.35\textwidth]{../graphics/maps/GunnisonGorgeAIMPlots.png}
   \caption{All plots sampled in the vicinity of the National Conservation Area}
 \end{wrapfigure}
 
@@ -560,7 +579,7 @@ GG_newWghts %>%
   select(Stratum, WghtPerPlot, WgtAcres, PlotsSampled, PlotsRejected) %>% 
   knitr::kable(., digits = 2, format.args = list(big.mark = ","), booktabs = T,
                col.names = c('Stratum',  'Plot Wt.', 'Plot Wt. Ac.', 'Sampled', 'Rejected'),
-               caption = "Realized Weighted Sample Design for the Entire Sample Frame", 
+               caption = "Realized Weighted Sample Design for the Gunnison Gorge NCA", 
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
   kableExtra::add_header_above(., c(" " = 3,  "No. Plots" = 2)) %>% 
   kableExtra::kable_styling(latex_options = "hold_position")
@@ -575,7 +594,7 @@ points <- points %>%
 rm(pts, GG_newWghts, ggarea)
 ```
 
-Of the `r drawnStrata(GG_NM)` strata which had plots drawn within the NCA, only `r SampledStrata(GG_NM)` were successfully sampled. ...
+Of the `r drawnStrata(GG_NM)` strata which had plots drawn within the NCA, only three were successfully sampled. Twice as many Salt Desert plots were sampled as desired, and each of them accordingly has half the acres associated with them as intended. Only one of the two Pinyon-Juniper plots were sampled, hence it's weight is doubled to account for all acres in the original stratum. Fewer Sagebrush plots were sampled than intended, and each is weightde to cover slightly more acres than in the original design. 
 
 ```{r write out results, eval = F}
 
@@ -595,7 +614,6 @@ rm(OriginalWeights_results, NewWeights_results, points, p)
 ```{r}
 rm(OriginalWeights_results, NewWeights_results, points, originalWeights, plotWeigher, GG_NM, gg)
 ```
-
 
 \newpage 
 
@@ -621,7 +639,7 @@ ps <- plot_status %>%
 
 ggplot(data = ps,
        aes(axis1 = stratum, axis2 = Plot.Status, y = n), color = NA) +
-  geom_alluvium(aes(fill = Plot.Status),  width = 0.25) +
+  geom_alluvium(aes(fill = Plot.Status),  width = 0.15) +
   geom_stratum(color = 'grey85') +
   geom_text(stat = "stratum", aes(label = after_stat(stratum)), color = 'grey15') +
   scale_fill_manual(values = c('forestgreen', '#e71313')) +

@@ -242,7 +242,7 @@ The strata of Mixed Conifer and Aspen, both had fewer plots sampled than the sam
 
 Aside from these two strata, all other strata had more plots sampled than expected. Because the area of inference which these plots speak to cannot change, the weight of each individual plot decreases in this scenario. In simpler terms, each plot represents a smaller unit of area. In the case of the Mixed Conifer and Aspend plots, each plot represents more area than intended.
 
-####  Areas of Critical Environmental Concern (ACEC's) and Wilderness Study Areas (WSA)
+###  Areas of Critical Environmental Concern (ACEC's) and Wilderness Study Areas (WSA)
 
 ```{r Import National Conservation Areas}
 
@@ -277,8 +277,7 @@ lookup_table <- read.csv(file.path(design_rast, 'UFO_strata_areas.csv')) %>%
   select(RasterValue, Code)
 
 strat_raster <- terra::rast(file.path(design_rast, 'UFO_Strata_reclass_30m.tif'))
-
-acecs <- st_read(file.path(spatial_products, 'BLM_CO_ACEC/acec_desig_poly.shp'), 
+acecs_all <- st_read(file.path(spatial_products, 'BLM_CO_ACEC/acec_desig_poly.shp'), 
                  quiet = T) %>%  
   st_intersection(uFO, .) %>% 
   select(NAME = ACEC_NAME) %>% 
@@ -287,8 +286,8 @@ acecs <- st_read(file.path(spatial_products, 'BLM_CO_ACEC/acec_desig_poly.shp'),
   group_by(NAME) %>% 
   summarize(geometry = st_union(geometry))
 
-t_acecs <- nrow(acecs)
-acecs <- acecs %>% 
+t_acecs <- nrow(acecs_all)
+acecs <- acecs_all %>% 
   filter(!NAME %in% c('Native Plant Community ONA', 'River Rims ACEC', 'Escalante Canyon ACEC'))
 
 wsa <- st_read(file.path(spatial_products, 'BLM_CO_WSA/nlcs_wsa_poly.shp'), 
@@ -434,28 +433,12 @@ More AIM plots in Mixed-Mountain Shrub and Pinyon-Juniper were sampled than draw
 
 \newpage
 
-#### Dominguez-Escalente National Conservation Area
+### Dominguez-Escalente National Conservation Area
 
-The Dominguez-Escalente National Conservation Area is joint administered with the Grand Junction Field Office, all values here refer only to the portions administered by the UFO field office. As mentioned previously, any lands within Wilderness Study Areas within the National Conservation Areas are included with the ACEC-WSA strata.
-
-River Rims ACEC, Escalante Canyon ACEC - SURROUNDED BY DE.
-
-
-```{r Original Point weights for Dominguez-Escalente NM}
-
-monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly.shp'), 
-                 quiet = T) %>% 
-  st_intersection(uFO, .) %>% 
-  group_by(NLCS_NAME) %>% 
-  st_collection_extract("POLYGON")  %>%  # there are these funny points
-  summarize(geometry = st_union(geometry)) %>% 
-  rename(NAME = NLCS_NAME)
+```{r Original Point weights for Dominguez-Escalente NCA}
 
 DEnm <- monuments %>% filter(str_detect(NAME, 'Dominguez')) %>% 
   mutate(ID = 1:n(), .before = 1, TYPE = 'NM')
-
-total_area <- round(as.numeric(measurements::conv_unit(st_area(DEnm), "m2", "acre")))
-dearea <- TArea(DEnm)
 
 OW_deNM <- originalWeights(DEnm, strat_raster, pts)
 OW_deNM_pts <- OW_deNM[[1]]
@@ -474,22 +457,24 @@ OW_deNM %>%
                align = c("c", rep('r', times = (ncol(.) - 1)))) %>% 
   kableExtra::kable_styling(latex_options = "hold_position")
 
-DEnm_only <- st_difference(DEnm, st_union(wsAcec))
-total_area <- round(as.numeric(measurements::conv_unit(st_area(DEnm_only), "m2", "acre"))) 
-de_only <- TArea(DEnm_only)
+dc_wild <- filter(wa, NAME == 'Dominguez Canyon') %>% 
+  st_union()
 
-rm(uFO, p2d, DEnm, spatial_products)
+acecs_de <- filter(acecs_all, NAME %in% c('River Rims ACEC', 'Escalante Canyon ACEC')) %>% 
+  st_union()
+
+rm(uFO, p2d, spatial_products)
 ```
 
-\begin{wrapfigure}{l}{0.5\textwidth}
+\begin{wrapfigure}{l}{0.4\textwidth}
   \centering
-    \includegraphics[width=0.5\textwidth]{../graphics/maps/DominguezEscalenteAIMPlots.png}
+    \includegraphics[width=0.4\textwidth]{../graphics/maps/DominguezEscalenteAIMPlots.png}
   \caption{All plots sampled in the vicinity of the National Conservation Area, by both the UFO and Grand Junction Field Office. The GJFO is North (towards the top of the page) of the black line running across the map.}
 \end{wrapfigure}
 
- The total area of the Monument which is administered by the Uncompahgre Field Office is roughly `r dearea` acres. However due to the large WSA within it, and assorted ACEC's the total area is reduced to only `r de_only` acres...
+The Dominguez-Escalente National Conservation Area is joint administered with the Grand Junction Field Office, all values here refer only to the portions administered by the UFO field office. As previously mentioned, this area contains both a Wilderness Study Area (The Dominguez WSA), which follows the course of the Gunnison River. It also contains a Wilderness area (The Dominguez Canyon Wilderness), largely composed of  difficult to access Pinyon-Juniper woodlands, which grade into Mixed Mountain Shrub in the higher elevations. This NCA also contains two Areas of Critical Environmental Concern (River Rim, and Escalente Canyon), both of which are essentially totally surrounded by the NCA. As expected, River Rim is four large parcels of land adjacent to the Gunnison River, three of which are in lands administered by the UFO field office. The Escalente Canyon ACEC is wholly located within the UFO administered portions of the NCA, and is comprised of Pinyon-Juniper Woodlands atop a mesa. 
  
-Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period 
+The total area of the Dominguez-Escalente NCA administered by the UFO field office is `r TArea(DEnm)`, of which `r TArea(dc_wild)` is comprised of the Dominguez Canyon Wilderness, and `r TArea(acecs_de)` by the two ACEC's. The lowest elevation bands in the area comprise riparian vegetation along the Gunnison River, and narrow riparian areas along a variety of the canyon bottoms feeding into the Gunnison. A large portion of the vegetation just outside of the riparian area is Salt Desert, and Pinon-Juniper composes the majority of the remaining areas, much of which is on top of Mesas. `r sum(OW_deNM$DesiredSS)` total AIM plots were drawn throughout the area, this relatively high number is due to much of the area being categorized as being Sagebrush vegetation under the original sample stratification surface. Another contributing factor was tiny flecks of mixed woodlands at the upper boundary of the parcel, given that the office has small amounts of Aspen, Mixed Conifer, and Ponderosa Pine, these areas had points drawn in them. Realistically these areas are mostly mixed-mountain shrub. 
 
 ```{r Final Point Weights for Dominguez-Escalente NCA}
 
@@ -512,12 +497,14 @@ NewWeights_results <- bind_rows(NewWeights_results, OW_newWghts %>%
 points <- points %>% 
   mutate(AoInference = if_else(Plot.ID %in% OW_deNM_pts$Plot.ID, 'DE-NM', AoInference))
 
-rm(OW_deNM, OW_newWghtsm, de_only, dearea)
+rm(OW_deNM, OW_newWghtsm, de_only, dearea, acecs_de, deNM)
 ```
+
+The three plots drawn in the Aspen and Mixed Conifer strata were unable to be sampled, as mentioned due to the isolated and difficult topography of portions of the NCA. One plot fewer than desired in the drawn Sagebrush stratum was sampled, however more plots than expected were sampled in the Pinyon-Juniper and Salt Desert strata.
 
 \newpage
 
-#### Gunnison Gorge National Conservation Area
+### Gunnison Gorge National Conservation Area
 
 ```{r Gunnison Gorge area, results = 'hide'}
 GGnm <- monuments %>% filter(str_detect(NAME, 'Gunnison')) %>% 

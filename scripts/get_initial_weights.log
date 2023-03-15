@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2023.2.26)  15 MAR 2023 12:25
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2023.2.26)  15 MAR 2023 13:56
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -574,7 +574,7 @@ File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 ) [1
 
 {/home/sagesteppe/.TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-<../graphics/maps/AIMPlots.png, id=35, 419.166pt x 344.9688pt>
+<../graphics/maps/AIMPlots.png, id=47, 419.166pt x 344.9688pt>
 File: ../graphics/maps/AIMPlots.png Graphic file (type png)
 <use ../graphics/maps/AIMPlots.png>
 Package pdftex.def Info: ../graphics/maps/AIMPlots.png  used on input line 267.
@@ -586,49 +586,40 @@ Package wrapfig Warning: Stationary wrapfigure forced to float on input line 272
 Package wrapfig Warning: Stationary wrapfigure forced to float on input line 275.
 
 [2] [3 <../graphics/maps/AIMPlots.png>] [4] [5]
-<../graphics/maps/DominguezEscalenteAIMPlots.png, id=65, 289.08pt x 257.0403pt>
+<../graphics/maps/DominguezEscalenteAIMPlots.png, id=76, 289.08pt x 257.0403pt>
 File: ../graphics/maps/DominguezEscalenteAIMPlots.png Graphic file (type png)
 <use ../graphics/maps/DominguezEscalenteAIMPlots.png>
-Package pdftex.def Info: ../graphics/maps/DominguezEscalenteAIMPlots.png  used on input line 520.
-(pdftex.def)             Requested size: 234.8769pt x 208.84473pt.
+Package pdftex.def Info: ../graphics/maps/DominguezEscalenteAIMPlots.png  used on input line 512.
+(pdftex.def)             Requested size: 187.89977pt x 167.0742pt.
 [6 <../graphics/maps/DominguezEscalenteAIMPlots.png>]
-
-Package wrapfig Warning: Collision between wrapping environments on input line 562.
-
-<../graphics/maps/GunnisonGorgeAIMPlots.png, id=76, 289.08pt x 338.4645pt>
+<../graphics/maps/GunnisonGorgeAIMPlots.png, id=85, 289.08pt x 338.4645pt>
 File: ../graphics/maps/GunnisonGorgeAIMPlots.png Graphic file (type png)
 <use ../graphics/maps/GunnisonGorgeAIMPlots.png>
-Package pdftex.def Info: ../graphics/maps/GunnisonGorgeAIMPlots.png  used on input line 564.
+Package pdftex.def Info: ../graphics/maps/GunnisonGorgeAIMPlots.png  used on input line 585.
 (pdftex.def)             Requested size: 234.8769pt x 275.00172pt.
-
-Package wrapfig Warning: Stationary wrapfigure forced to float on input line 568.
-
-
-Package wrapfig Warning: Stationary wrapfigure forced to float on input line 579.
-
-[7 <../graphics/maps/GunnisonGorgeAIMPlots.png>]
-<get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf, id=88, 469.755pt x 307.1475pt>
+[7 <../graphics/maps/GunnisonGorgeAIMPlots.png>] [8]
+<get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf, id=101, 469.755pt x 307.1475pt>
 File: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf Graphic file (type pdf)
 <use get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf>
-Package pdftex.def Info: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf  used on input line 639.
+Package pdftex.def Info: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf  used on input line 660.
 (pdftex.def)             Requested size: 469.75386pt x 307.14674pt.
-[8 <./get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf>] (./get_initial_weights.aux)
+[9 <./get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf>] (./get_initial_weights.aux)
 Package rerunfilecheck Info: File `get_initial_weights.out' has not changed.
-(rerunfilecheck)             Checksum: C68C723D31AC3566F8613A9C06EC0BBB;921.
+(rerunfilecheck)             Checksum: C955483D7151A8D1883F8743961F1EFD;1988.
  ) 
 Here is how much of TeX's memory you used:
- 13626 strings out of 477984
- 222095 string characters out of 5838807
+ 13630 strings out of 477984
+ 222140 string characters out of 5838807
  1870388 words of memory out of 5000000
- 33537 multiletter control sequences out of 15000+600000
+ 33540 multiletter control sequences out of 15000+600000
  556309 words of font info for 71 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 75i,9n,76p,413b,453s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,9n,76p,556b,453s stack positions out of 10000i,1000n,20000p,200000b,200000s
 {/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}</home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi7.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr17.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmri10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb>
-Output written on get_initial_weights.pdf (8 pages, 2933350 bytes).
+Output written on get_initial_weights.pdf (9 pages, 2935566 bytes).
 PDF statistics:
- 158 PDF objects out of 1000 (max. 8388607)
- 119 compressed objects within 2 object streams
- 36 named destinations out of 1000 (max. 500000)
- 53 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 174 PDF objects out of 1000 (max. 8388607)
+ 134 compressed objects within 2 object streams
+ 37 named destinations out of 1000 (max. 500000)
+ 77 words of extra memory for PDF output out of 10000 (max. 10000000)
 

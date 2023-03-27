@@ -14,6 +14,7 @@ bibliography: ../citations/citations/citations.bib
 link-citations: yes
 ---
 
+\pagenumbering{gobble}
 \vspace{-1cm}
 
 ```{r setup, include=FALSE}
@@ -54,11 +55,11 @@ rm(p2drought, dem, elevations)
 
 This AIM study was designed with three major principals in mind. The first, was maximizing the number of environments which it represents across the field office. The UFO field office varies by nearly `r round(max_el - min_el, -2)` feet, and displays a diversity of environments associated with this topographic gradient; and this sample design included this entire range of variation. To ensure that these diverse areas were represented, ten major strata were identified (Table 1), in order to ensure that they had plots located in them in order to evaluate their ecological *integrity*. However, the management concerns, actions, and heterogeneity (internal dissimilarity) of these strata differ. To best understand the ecological context of these strata, and what management actions the BLM may take, the proportion of plots were tailored to each stratum. The third principal was that all plots be randomly placed within the stratum, which allows *inference* to be made from plots to the, unsampled, entirety of the stratum. This *weighted sample design* allows us to maximize statistical understanding while minimizing the field effort required to undertake it. Finally, the entire field office was designated as the *sample frame*, i.e. the area of analysis (or a spatially explicit population), which statistical inference can be made to.
 
-The initial sample design followed the general AIM implementation design to contain 255 plots to be sampled across five years. Sampling over a five year period is essential in order to ensure that plots are visited during periods wherein the vegetation is *reproductively active*, hence identifiable. A benefit of this prolonged time frame is that anomalous weather conditions are unlikely to affect the plots across the entire time period. For example, the condition of plots may be compared in a wet year, to a dry year, as referenced from a year with typical rainfall. In order to avoid random unexpected processes which cluster in space which may occur over the period of conducting the sample design, the entire design is split into a *reproductively active* for each year of sampling. Each panel is composed of a subset of randomly selected points within the sample design and avoids missing swathes of the *target frame* during the sample period due to an event such as a prolonged wildfire. 
+The initial sample design followed the general AIM implementation design to contain 255 plots to be sampled across five years. Sampling over a five year period is essential in order to ensure that plots are visited during periods wherein the vegetation is a state of *reproductive activity*, hence identifiable. A benefit of this prolonged time frame is that anomalous weather conditions are unlikely to affect the plots across the entire time period. For example, the condition of plots may be compared in a wet year, to a dry year, as referenced from a year with typical rainfall. In order to avoid random unexpected processes which cluster in space which may occur over the period of conducting the sample design, the entire design is split into a part of the year when plants are reproductively active for each year of sampling. Each panel is composed of a subset of randomly selected points within the sample design and avoids missing swathes of the *target frame* during the sample period due to an event such as a prolonged wildfire. 
 
 The location of the random plots for AIM are generated via computer and a number of them may not feasibly be sampled. In general potential plots are most often, anecdotally, rejected for: being located on steep slopes which are dangerous for field crews to sample, requiring access to cross private land to access BLM which landowners deny. The inability of these plots to be sampled reduces the spatial extent of the strata which we may use statistics to infer across, and increases the measures of uncertainty associated with these areas. In this section we review the original sample design, derive original sample weights for sub-units of the field office, and calculate the weights for each of these units after the sample design has been completed. 
 
-### the design may be represented in simple mathematical terms
+#### the design may be represented in simple mathematical terms
 
 Using an example from a stratum which is of high land management importance, sagebrush-steppe, we illustrate the site selection process. While the aerial extent of sagebrush-steppe in the target frame is roughly one quarter (0.246), the stratum makes up one third (0.33) of all plots
 
@@ -148,7 +149,7 @@ plot_status <- plot_status %>%
 plot_status <- plot_status %>% 
   mutate(across(.cols = Plot.ID:stratum, ~ str_to_upper(.x)))
 pts <- st_read(
-  '/media/sagesteppe/ExternalHD/aimDB/data/raw/AIM_Sample_Design/AIM_Design_Stratification.shp',
+  '../../aimDB/data/raw/AIM_Sample_Design/AIM_Design_Stratification.shp',
                 quiet = T) %>% 
   left_join(., plot_status, by = c('PLOTID' = 'Plot.ID')) %>% 
   select(-Panel) %>%  
@@ -188,7 +189,7 @@ plot_summary <- plot_summary %>%
 # DERIVE THE VALUES FOR BOTH TOTAL AREA AND AREAS IN ACRES
 r <- read.csv(file.path(p2d, 'UFO_strata_areas.csv')) %>% 
   mutate(ProportionalArea = Cells/sum(Cells)) %>% 
-  select(Stratum, Code, ProportionalArea, Acres)
+  select(Stratum, Code, ProportionalArea, Acres)  # these need to have the other areas subtracted...
 
 deSS <- data.frame( # desired sample size per stratum over live of sample design
   'Stratum' = c("AS", "GR", "MC", "MMS", "OT" , "PJ", "PP", "RI", "SD" , "SS" ), 
@@ -218,6 +219,8 @@ OriginalWeights %>%
 rm(r, plot_summary)
 ```
 
+\newpage
+
 ## All land, less species status
 
 \begin{wrapfigure}{l}{0.35\textwidth}
@@ -232,9 +235,39 @@ rm(r, plot_summary)
 
 The majority of land administered by the field office does not fall under any special regulatory status, such as those which are present for the Areas of Critical Environmental Concern (ACEC's), Wilderness [Study] Areas, and National Conservation Areas. The initial AIM sample design covered the entirety of the Field Office, and did not separate out, or weigh, the special regulatory areas from the majority of BLM administered land. However, given that this area is managed differently than the following three other areas, and that it has different management objectives with more tolerance to certain kinds of uses, we split this area out retroactively. Here we assess the location of the AIM plots drawn in the original sample design, and using spatial techniques assign them to this area. We then determine the weights of plots under the scenario that all plots were sampled (Table 1), and under the realized condition that only certain plots were sampled (Table 2). Generally, we would only be performing the second action at the end of the sampling.
 
+```{r import some spatial products}
+spatial_products <- '../../UFO_cartography'
+uFO <- st_read(file.path(spatial_products, 
+                         'BLM_CO_Surface_Management/BLM_CO_Surface_Management_Agency.shp'), quiet = T)
+
+monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly.shp'), 
+                 quiet = T) %>% 
+  st_intersection(uFO, .) %>% 
+  group_by(NLCS_NAME) %>% 
+  st_collection_extract("POLYGON")  %>%  # there are these funny points
+  summarize(geometry = st_union(geometry)) %>% 
+  rename(NAME = NLCS_NAME)
+
+acecs_all <- st_read(file.path(spatial_products, 'BLM_CO_ACEC/acec_desig_poly.shp'), 
+                 quiet = T) %>%  
+  st_intersection(uFO, .) %>% 
+  select(NAME = ACEC_NAME) %>% 
+  mutate(TYPE = 'ACEC',  .before = geometry)  %>% 
+  filter(NAME != 'Sinbad Valley ACEC') %>%
+  group_by(NAME) %>% 
+  summarize(geometry = st_union(geometry))
+```
+
 ```{r Adjust the Sample Point Weights across entire Field Office}
 
-Full_newWghts <- plotWeigher(OriginalWeights, pts)
+uFO_remains <- st_difference(uFO, st_union(monuments)) %>% 
+  st_difference(., st_union(acecs_all))
+
+pts_base <- pts %>% 
+  st_transform(., st_crs(uFO_remains)) %>% 
+  st_intersection(., uFO_remains)
+
+Full_newWghts <- plotWeigher(OriginalWeights, pts_base)
 
 Full_newWghts %>% 
   mutate(across(TotalAcres:WgtAcres, ~ round(.x, 3))) %>% 
@@ -253,29 +286,16 @@ OriginalWeights_results <- mutate(OriginalWeights, 'Area' = 'SampleFrame') %>%
 NewWeights_results <- mutate(Full_newWghts, 'Area' = 'SampleFrame') %>% 
   select(-any_of(c('StratumName')))
 
-rm(OriginalWeights, Full_newWghts)
+rm(OriginalWeights, Full_newWghts, pts_base)
 ```
 
-
-The strata of Mixed Conifer and Aspen, both had fewer plots sampled than the sample design called for. Both of these areas are relatively rare across the field office, and accordingly had very few initial plots drawn for each of them. The inability to sample these is due to several of the drawn base points and over sample plots being located on parcels of land, which required permission from private land owners to access, but which were denied; or were on areas with very high slopes, which were unsafe to sample. While we are able to use these plot weights to infer across the field office on the whole, we note that a discrepancy existed between the actual distribution of these areas in the office and the plots classified as such **SECTION XX**. While we regret not being able to sample these plots, most of the drawn locations were actually in Mixed Mountain Shrub, an area which was weighed to have extra plots and which was successfully sampled.
+The strata of Mixed Conifer and Aspen, both had fewer plots sampled than the sample design called for. Both of these areas are relatively rare across the field office, and accordingly had very few initial plots drawn for each of them. The inability to sample these is due to several of the drawn base points and over sample plots being located on parcels of land, which required permission from private land owners to access, but which were denied; or were on areas with very high slopes, which were unsafe to sample. While we are able to use these plot weights to infer across the field office on the whole, we note that a discrepancy existed between the actual distribution of these areas in the office and the plots classified as such (Section 2). While we regret not being able to sample these plots, most of the drawn locations were actually in Mixed Mountain Shrub, an area which was weighed to have extra plots and which was successfully sampled.
 
 Aside from these two strata, all other strata had more plots sampled than expected. Because the area of inference which these plots speak to cannot change, the weight of each individual plot decreases in this scenario. In simpler terms, each plot represents a smaller unit of area. In the case of the Mixed Conifer and Aspend plots, each plot represents more area than intended.
 
 ###  Areas of Critical Environmental Concern (ACEC's) and Wilderness Study Areas (WSA)
 
 ```{r Import National Conservation Areas}
-
-spatial_products <- '../../UFO_cartography'
-uFO <- st_read(file.path(spatial_products, 
-                         'BLM_CO_Grazing_Allotments/gra_allot_poly.shp'), quiet = T)
-
-monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly.shp'), 
-                 quiet = T) %>% 
-  st_intersection(uFO, .) %>% 
-  group_by(NLCS_NAME) %>% 
-  st_collection_extract("POLYGON")  %>%  # there are these funny points
-  summarize(geometry = st_union(geometry)) %>% 
-  rename(NAME = NLCS_NAME)
 
 DEnm <- monuments %>% filter(str_detect(NAME, 'Dominguez')) %>% 
   mutate(ID = 1:n(), .before = 1, TYPE = 'NM')
@@ -316,7 +336,6 @@ wsa <- st_read(file.path(spatial_products, 'BLM_CO_WSA/nlcs_wsa_poly.shp'),
   filter(!NAME %in% c('Sewemup Mesa', 'American Flats'))
 
 wsa <- st_intersection(wsa, uFO) %>% 
-  select(-ALLOT_NAME, -ALLOT_NO, -tempID) %>%
   group_by(NAME) %>% 
   filter(NAME != 'Dominguez') %>%
   summarize(geometry = st_union(geometry)) %>% 
@@ -366,7 +385,7 @@ The reporting units of Areas of Critical Environmental Concern (ACEC's), and Wil
 > "*greater than 80 percent of vegetation communities in ACEC's, WSA's...*" 
 > `r tufte::quote_footer('--- RMP 2019')`
 
-These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of plots in the region. As our sample design was initiated and completed during a period of drought (**SECTION** 5), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
+These areas were not intensified units within the original sample design, rather we split them out here using the original point draw for the field office. Here we calculate the initial sample weights for them using the same approach as for the remainder of BLM land, i.e. the acreage of each stratum is weighed against a targeted proportion of plots in the region. As our sample design was initiated and completed during a period of drought (Section 6), we dismiss the possibilities of making temporal comparisons across the sample panels. Accordingly, we have strata within these management units which: do not have a point per year panel (i.e. cannot be sampled each year). Subsequently, we do not have the initial ability to infer across the entire acreage of each stratum within them. 
 
 Strata with five or more plots, would allow for temporal analyses to be conducted on their data. Strata with less than five plots can only be treated as static entities within this time period.
 
@@ -619,7 +638,7 @@ rm(OriginalWeights_results, NewWeights_results, points, originalWeights, plotWei
 
 ### Summary of Plot Sampling Efforts
 
-No clear biases existed in the success of plot sampling efforts with the exception of Mixed Conifer plots. 
+Considering all strata in each of the above units together, no clear biases existed in the success of plot sampling efforts with the exception of Mixed Conifer and Aspen plots. As previously indicated, these areas tend to be located at the Field Offices highest elevation locations. These localities are difficult to access due to 1) lack of permission from private land owners whose roads are required to access the area in an efficient manner, 2) steep slopes or treacherous terrain on plot making them unsafe to sample. 
 
 ```{r Alluvial tracking plot status, warning = F, fig.cap = 'Fates of all potential AIM plots from the Sample Design'}
 

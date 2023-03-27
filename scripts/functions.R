@@ -14,7 +14,7 @@
 originalWeights <- function(sample_area, strat_raster, pt_data){
   
   focal_pts <- pts[unlist(st_intersects(sample_area, st_transform(pt_data, st_crs(sample_area)))),]
-  
+
   # identify the cover of each stratum in the focal area
   areaSpat <- vect(sample_area) 
   focal_areas <- terra::expanse(areaSpat, unit = 'ha') * 2.47105 # conversion to acres
@@ -35,8 +35,8 @@ originalWeights <- function(sample_area, strat_raster, pt_data){
   
   focal_areas <- left_join(focal_areas, raster_cells) %>% 
     mutate(Area = Total_Area * PropArea)  %>% 
-    select(ID, NAME, TYPE, Total_Area, Code, 
-           PropArea, Area, TotalFocalArea)
+    select(any_of(c('ID', 'NAME', 'TYPE', 'Total_Area', 'Code', 
+           'PropArea', 'Area', 'TotalFocalArea')))
   
   area_summary <- focal_areas %>% 
     ungroup() %>% 
@@ -52,6 +52,7 @@ originalWeights <- function(sample_area, strat_raster, pt_data){
     filter(str_detect(Panel, 'OverSample', negate = T))
   
   # need to calculate the desired sites per stratum as function of plot weight. 
+  
   area_summary <- area_summary %>% 
     left_join(., deSS, by = 'Stratum') %>%  # desired ss total_area 
     mutate(DesiredSS = round(DesiredSS * (nrow(base_target_pts)/255))) %>% 

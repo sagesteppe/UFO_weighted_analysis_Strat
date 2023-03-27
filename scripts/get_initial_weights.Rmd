@@ -107,6 +107,35 @@ The Uncompahgre Resource Management Plan, completed in June 2019 covers 675,800 
 > "*Maximize native vegetation and natural processes by ensuring upland vegetation communities are within the range of natural variability, with an appropriate mix of plant functional groups, cover, and diversity, according to best available science on greater than 80 percent of vegetation communities in ACECs, WSAs, suitable WSR segments, and lands managed to minimize impacts on wilderness characteristics and on greater than 70 percent of vegetation communities on the remaining BLM- administered lands, over 10 years with 80 percent confidence.*" 
 > `r tufte::quote_footer('--- RMP 2019')`
 
+
+```{r import some spatial products}
+spatial_products <- '../../UFO_cartography'
+uFO <- st_read(file.path(spatial_products, 
+                         'BLM_CO_Surface_Management/BLM_CO_Surface_Management_Agency.shp'), quiet = T)
+
+monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly.shp'), 
+                 quiet = T) %>% 
+  st_intersection(uFO, .) %>% 
+  group_by(NLCS_NAME) %>% 
+  st_collection_extract("POLYGON")  %>%  # there are these funny points
+  summarize(geometry = st_union(geometry)) %>% 
+  rename(NAME = NLCS_NAME)
+
+acecs_all <- st_read(file.path(spatial_products, 'BLM_CO_ACEC/acec_desig_poly.shp'), 
+                 quiet = T) %>%  
+  st_intersection(uFO, .) %>% 
+  select(NAME = ACEC_NAME) %>% 
+  mutate(TYPE = 'ACEC',  .before = geometry)  %>% 
+  filter(NAME != 'Sinbad Valley ACEC') %>%
+  group_by(NAME) %>% 
+  summarize(geometry = st_union(geometry))
+
+design_rast <- '../../UFO_AIM_Design_Stratification/processed'
+lookup_table <- read.csv(file.path(design_rast, 'UFO_strata_areas.csv')) %>% 
+  select(RasterValue, Code)
+strat_raster <- terra::rast(file.path(design_rast, 'UFO_Strata_reclass_30m.tif'))
+```
+
 ```{r Import and tidy data}
 
 rm(min_el, max_el)
@@ -203,7 +232,30 @@ OriginalWeights <- left_join(plot_summary, r, by = c('Stratum' = 'Code')) %>%
           DesiredSS, PropArea = ProportionalArea, PropTarget, Acres) %>% 
   mutate(ApproxStWgt = Acres / (DesiredSS/5))
 
-OriginalWeights %>% 
+uFO_remains <- st_difference(uFO, st_union(monuments)) %>% 
+  st_difference(., st_union(acecs_all)) %>% 
+  st_union() %>% 
+  st_collection_extract('POLYGON') %>% 
+  st_as_sf() %>% 
+  rename(geometry = x) %>% 
+  mutate(ID = 1, NAME = 'UFO', .before = geometry) %>% 
+  st_make_valid() 
+  
+pts_base <- pts %>% 
+  st_transform(., st_crs(uFO_remains)) %>% 
+  st_intersection(., uFO_remains) %>% 
+  select(-NAME)
+
+og1 <- originalWeights(
+  sample_area = uFO_remains, strat_raster = strat_raster, pt_data = pts_base)
+
+pts_base <- og1[[1]]
+OriginalWeights1 <- og1[[2]]
+
+
+unique(OriginalWeights1$Stratum)
+
+OriginalWeights1 %>% 
   mutate(PropArea = round(PropArea, 3)) %>% 
   mutate(across(.cols = c(Acres, ApproxStWgt),  round)) %>% 
   arrange(-Acres) %>% 
@@ -216,7 +268,7 @@ OriginalWeights %>%
                align = c("c", rep('r', times = (ncol(.) - 1))))  %>% 
   kable_styling(full_width = F)
 
-rm(r, plot_summary)
+rm(r, plot_summary, og1)
 ```
 
 \newpage
@@ -235,39 +287,10 @@ rm(r, plot_summary)
 
 The majority of land administered by the field office does not fall under any special regulatory status, such as those which are present for the Areas of Critical Environmental Concern (ACEC's), Wilderness [Study] Areas, and National Conservation Areas. The initial AIM sample design covered the entirety of the Field Office, and did not separate out, or weigh, the special regulatory areas from the majority of BLM administered land. However, given that this area is managed differently than the following three other areas, and that it has different management objectives with more tolerance to certain kinds of uses, we split this area out retroactively. Here we assess the location of the AIM plots drawn in the original sample design, and using spatial techniques assign them to this area. We then determine the weights of plots under the scenario that all plots were sampled (Table 1), and under the realized condition that only certain plots were sampled (Table 2). Generally, we would only be performing the second action at the end of the sampling.
 
-```{r import some spatial products}
-spatial_products <- '../../UFO_cartography'
-uFO <- st_read(file.path(spatial_products, 
-                         'BLM_CO_Surface_Management/BLM_CO_Surface_Management_Agency.shp'), quiet = T)
-
-monuments <- st_read(file.path(spatial_products, 'BLM_CO_NM_NCA/nlcs_nm_nca_poly.shp'), 
-                 quiet = T) %>% 
-  st_intersection(uFO, .) %>% 
-  group_by(NLCS_NAME) %>% 
-  st_collection_extract("POLYGON")  %>%  # there are these funny points
-  summarize(geometry = st_union(geometry)) %>% 
-  rename(NAME = NLCS_NAME)
-
-acecs_all <- st_read(file.path(spatial_products, 'BLM_CO_ACEC/acec_desig_poly.shp'), 
-                 quiet = T) %>%  
-  st_intersection(uFO, .) %>% 
-  select(NAME = ACEC_NAME) %>% 
-  mutate(TYPE = 'ACEC',  .before = geometry)  %>% 
-  filter(NAME != 'Sinbad Valley ACEC') %>%
-  group_by(NAME) %>% 
-  summarize(geometry = st_union(geometry))
-```
 
 ```{r Adjust the Sample Point Weights across entire Field Office}
 
-uFO_remains <- st_difference(uFO, st_union(monuments)) %>% 
-  st_difference(., st_union(acecs_all))
-
-pts_base <- pts %>% 
-  st_transform(., st_crs(uFO_remains)) %>% 
-  st_intersection(., uFO_remains)
-
-Full_newWghts <- plotWeigher(OriginalWeights, pts_base)
+Full_newWghts <- plotWeigher(OriginalWeights1, pts_base)
 
 Full_newWghts %>% 
   mutate(across(TotalAcres:WgtAcres, ~ round(.x, 3))) %>% 
@@ -286,7 +309,7 @@ OriginalWeights_results <- mutate(OriginalWeights, 'Area' = 'SampleFrame') %>%
 NewWeights_results <- mutate(Full_newWghts, 'Area' = 'SampleFrame') %>% 
   select(-any_of(c('StratumName')))
 
-rm(OriginalWeights, Full_newWghts, pts_base)
+rm(OriginalWeights1, Full_newWghts, pts_base)
 ```
 
 The strata of Mixed Conifer and Aspen, both had fewer plots sampled than the sample design called for. Both of these areas are relatively rare across the field office, and accordingly had very few initial plots drawn for each of them. The inability to sample these is due to several of the drawn base points and over sample plots being located on parcels of land, which required permission from private land owners to access, but which were denied; or were on areas with very high slopes, which were unsafe to sample. While we are able to use these plot weights to infer across the field office on the whole, we note that a discrepancy existed between the actual distribution of these areas in the office and the plots classified as such (Section 2). While we regret not being able to sample these plots, most of the drawn locations were actually in Mixed Mountain Shrub, an area which was weighed to have extra plots and which was successfully sampled.
@@ -295,7 +318,7 @@ Aside from these two strata, all other strata had more plots sampled than expect
 
 ###  Areas of Critical Environmental Concern (ACEC's) and Wilderness Study Areas (WSA)
 
-```{r Import National Conservation Areas}
+```{r split out National Conservation Areas}
 
 DEnm <- monuments %>% filter(str_detect(NAME, 'Dominguez')) %>% 
   mutate(ID = 1:n(), .before = 1, TYPE = 'NM')
@@ -311,11 +334,6 @@ GGnm <- monuments %>% filter(str_detect(NAME, 'Gunnison')) %>%
 
 ```{r Original Point weights for ACEC and WSA}
 
-design_rast <- '../../UFO_AIM_Design_Stratification/processed'
-lookup_table <- read.csv(file.path(design_rast, 'UFO_strata_areas.csv')) %>% 
-  select(RasterValue, Code)
-
-strat_raster <- terra::rast(file.path(design_rast, 'UFO_Strata_reclass_30m.tif'))
 acecs_all <- st_read(file.path(spatial_products, 'BLM_CO_ACEC/acec_desig_poly.shp'), 
                  quiet = T) %>%  
   st_intersection(uFO, .) %>% 

@@ -226,12 +226,6 @@ deSS <- data.frame( # desired sample size per stratum over live of sample design
   'PropTarget' = c(0.01, 0.02, 0.05, 0.1, 0.01, 0.12, 0.01, 0.05, 0.3, 0.33)
 ) 
 
-OriginalWeights <- left_join(plot_summary, r, by = c('Stratum' = 'Code')) %>% 
-  left_join(., deSS, by = 'Stratum') %>% 
-  select(StratumName = Stratum.y, Stratum, Total,  NotSampled = Not_sampled, Rejected, Sampled, 
-          DesiredSS, PropArea = ProportionalArea, PropTarget, Acres) %>% 
-  mutate(ApproxStWgt = Acres / (DesiredSS/5))
-
 uFO_remains <- st_difference(uFO, st_union(monuments)) %>% 
   st_difference(., st_union(acecs_all)) %>% 
   st_union() %>% 
@@ -246,16 +240,13 @@ pts_base <- pts %>%
   st_intersection(., uFO_remains) %>% 
   select(-NAME)
 
-og1 <- originalWeights(
-  sample_area = uFO_remains, strat_raster = strat_raster, pt_data = pts_base)
+OriginalWeights <- left_join(plot_summary, r, by = c('Stratum' = 'Code')) %>% 
+  left_join(., deSS, by = 'Stratum') %>% 
+  select(StratumName = Stratum.y, Stratum, Total,  NotSampled = Not_sampled, Rejected, Sampled, 
+          DesiredSS, PropArea = ProportionalArea, PropTarget, Acres) %>% 
+  mutate(ApproxStWgt = Acres / (DesiredSS/5)) 
 
-pts_base <- og1[[1]]
-OriginalWeights1 <- og1[[2]]
-
-
-unique(OriginalWeights1$Stratum)
-
-OriginalWeights1 %>% 
+OriginalWeights %>% 
   mutate(PropArea = round(PropArea, 3)) %>% 
   mutate(across(.cols = c(Acres, ApproxStWgt),  round)) %>% 
   arrange(-Acres) %>% 
@@ -287,10 +278,9 @@ rm(r, plot_summary, og1)
 
 The majority of land administered by the field office does not fall under any special regulatory status, such as those which are present for the Areas of Critical Environmental Concern (ACEC's), Wilderness [Study] Areas, and National Conservation Areas. The initial AIM sample design covered the entirety of the Field Office, and did not separate out, or weigh, the special regulatory areas from the majority of BLM administered land. However, given that this area is managed differently than the following three other areas, and that it has different management objectives with more tolerance to certain kinds of uses, we split this area out retroactively. Here we assess the location of the AIM plots drawn in the original sample design, and using spatial techniques assign them to this area. We then determine the weights of plots under the scenario that all plots were sampled (Table 1), and under the realized condition that only certain plots were sampled (Table 2). Generally, we would only be performing the second action at the end of the sampling.
 
-
 ```{r Adjust the Sample Point Weights across entire Field Office}
 
-Full_newWghts <- plotWeigher(OriginalWeights1, pts_base)
+Full_newWghts <- plotWeigher(OriginalWeights, pts_base)
 
 Full_newWghts %>% 
   mutate(across(TotalAcres:WgtAcres, ~ round(.x, 3))) %>% 

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2023.2.26)  28 MAR 2023 09:33
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2023.2.26)  29 MAR 2023 15:57
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -563,12 +563,12 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 88.
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 154.
+(Font)              <10> on input line 156.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 154.
+(Font)              <7> on input line 156.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 154.
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 161.
+(Font)              <5> on input line 156.
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 163.
 (/home/sagesteppe/.TinyTeX/texmf-dist/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 ) [1
@@ -577,50 +577,50 @@ File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.262 \newpage
+l.264 \newpage
                [2]
 <../graphics/maps/AIMPlots.png, id=48, 419.166pt x 344.9688pt>
 File: ../graphics/maps/AIMPlots.png Graphic file (type png)
 <use ../graphics/maps/AIMPlots.png>
-Package pdftex.def Info: ../graphics/maps/AIMPlots.png  used on input line 270.
+Package pdftex.def Info: ../graphics/maps/AIMPlots.png  used on input line 272.
 (pdftex.def)             Requested size: 164.41428pt x 135.31105pt.
 
-Package wrapfig Warning: Stationary wrapfigure forced to float on input line 275.
+Package wrapfig Warning: Stationary wrapfigure forced to float on input line 277.
 
 
-Package wrapfig Warning: Stationary wrapfigure forced to float on input line 278.
+Package wrapfig Warning: Stationary wrapfigure forced to float on input line 280.
 
 
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.337 
+l.339 
        [3 <../graphics/maps/AIMPlots.png>]
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.413 
+l.415 
        [4]
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.486 \newpage
+l.488 \newpage
                [5]
 <../graphics/maps/DominguezEscalenteAIMPlots.png, id=69, 559.3698pt x 506.3718pt>
 File: ../graphics/maps/DominguezEscalenteAIMPlots.png Graphic file (type png)
 <use ../graphics/maps/DominguezEscalenteAIMPlots.png>
-Package pdftex.def Info: ../graphics/maps/DominguezEscalenteAIMPlots.png  used on input line 517.
+Package pdftex.def Info: ../graphics/maps/DominguezEscalenteAIMPlots.png  used on input line 519.
 (pdftex.def)             Requested size: 164.41518pt x 148.83751pt.
 
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.585 \newpage
+l.587 \newpage
                [6 <../graphics/maps/DominguezEscalenteAIMPlots.png>]
 <../graphics/maps/GunnisonGorgeAIMPlots.png, id=77, 559.3698pt x 506.3718pt>
 File: ../graphics/maps/GunnisonGorgeAIMPlots.png Graphic file (type png)
 <use ../graphics/maps/GunnisonGorgeAIMPlots.png>
-Package pdftex.def Info: ../graphics/maps/GunnisonGorgeAIMPlots.png  used on input line 616.
+Package pdftex.def Info: ../graphics/maps/GunnisonGorgeAIMPlots.png  used on input line 618.
 (pdftex.def)             Requested size: 164.41518pt x 148.83751pt.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
@@ -629,37 +629,37 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.666 
+l.668 
        [7 <../graphics/maps/GunnisonGorgeAIMPlots.png>]
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.667 \newpage
+l.669 \newpage
                [8]
 <get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf, id=91, 429.605pt x 307.1475pt>
 File: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf Graphic file (type pdf)
 <use get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf>
-Package pdftex.def Info: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf  used on input line 684.
+Package pdftex.def Info: get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf  used on input line 686.
 (pdftex.def)             Requested size: 429.61049pt x 307.15143pt.
 
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.688 \end{document}
+l.690 \end{document}
                      [9 <./get_initial_weights_files/figure-latex/Alluvial tracking plot status-1.pdf>] (./get_initial_weights.aux)
 Package rerunfilecheck Info: File `get_initial_weights.out' has not changed.
 (rerunfilecheck)             Checksum: 70AB18E2C3C06A434D7F863F8047B353;1630.
  ) 
 Here is how much of TeX's memory you used:
  13622 strings out of 477984
- 222090 string characters out of 5838807
+ 222104 string characters out of 5838807
  1871388 words of memory out of 5000000
  33540 multiletter control sequences out of 15000+600000
  556309 words of font info for 71 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  75i,9n,76p,556b,450s stack positions out of 10000i,1000n,20000p,200000b,200000s
 {/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{/home/sagesteppe/.TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}</home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi7.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmr17.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmri10.pfb></home/sagesteppe/.TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb>
-Output written on get_initial_weights.pdf (9 pages, 5206414 bytes).
+Output written on get_initial_weights.pdf (9 pages, 5206508 bytes).
 PDF statistics:
  160 PDF objects out of 1000 (max. 8388607)
  120 compressed objects within 2 object streams
